@@ -1,10 +1,10 @@
-# OneLogin CLI
+#OneLogin CLI
 
-## Description
+##Description
 
 The OneLogin CLI is your way to manage OneLogin resources such as Apps, Users, and Mappings via the Command Line.
 
-## Features
+##Features
 `terraform-import`: Import your OneLogin Apps into a local Terraform State.
 This will:
   1. Pull **all** your apps using the /apps endpoint
