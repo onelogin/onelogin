@@ -15,7 +15,9 @@ limitations under the License.
 */
 package main
 
-import "github.com/onelogin/onelogin-cli/cmd"
+import (
+	"github.com/onelogin/onelogin-cli/cmd"
+)
 
 func main() {
 	cmd.Execute()
