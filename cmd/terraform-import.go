@@ -47,7 +47,14 @@ func (placeholder *TerraformPlaceholder) InitializeTerraformImport() {
 }
 
 func terraformImport(cmd *cobra.Command, args []string) {
+	availableImportArgs := []string{"apps"}
 	fmt.Println("Terraform Import!")
+
+	if len(args) == 0 {
+		fmt.Println("Must specify resource to import!")
+		fmt.Println("Available resources:", availableImportArgs)
+		os.Exit(1)
+	}
 	fmt.Println("Collecting Apps from OneLogin...")
 
 	allApps := getAllApps()
@@ -55,8 +62,8 @@ func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Printf("This will import %d apps. Do you want to continue? (y/n): ", len(allApps))
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
-	ans := input.Text()
-	if ans != "y" {
+	ans := strings.ToLower(input.Text())
+	if ans != "y" && ans != "yes" {
 		os.Exit(0)
 	}
 
