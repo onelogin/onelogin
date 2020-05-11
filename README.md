@@ -13,9 +13,9 @@ This will:
   4. (W.I.P.) using .tfstate, update sub-components of apps in main.tf (e.g. parameters)
 
 ## Usage
-This assumes you have Terraform and Go installed
+This assumes you have Terraform and Go installed.
 
 `go install github.com/onelogin/onelogin-cli`
 
 from an empty directory, where you plan to manage your main.tf file run:
-`onelogin-cli terraform-import`
+`onelogin-cli terraform-import apps`
