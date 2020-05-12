@@ -121,7 +121,7 @@ func ImportTFState(shells []Shell) []Resource {
 	for _, shell := range shells {
 		if knownProviders[shell.Provider] == 0 {
 			knownProviders[shell.Provider]++
-			buffer = append(buffer, []byte(fmt.Sprintf("provider %s {}\n\n", shell.Provider))...)
+			buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", shell.Provider, shell.Provider))...)
 		}
 		buffer = append(buffer, shell.Content...)
 	}
