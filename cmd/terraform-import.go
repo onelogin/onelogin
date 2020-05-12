@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/onelogin/onelogin-cli/terraform"
@@ -24,9 +22,6 @@ func init() {
 
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
-	terraform.SetUpTerraformFile()
-	log.Println("Initializing Terraform with 'terraform init'...")
-	exec.Command("terraform", "init").Run()
 
 	var shells []terraform.Shell
 

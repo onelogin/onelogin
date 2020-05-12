@@ -19,7 +19,7 @@ func CreateImportShells() []Shell {
 	shells := make([]Shell, len(allApps))
 
 	for i, app := range allApps {
-		shell := Shell{}
+		shell := Shell{Provider: "onelogin"}
 		switch *app.AuthMethod {
 		case 8:
 			shell.Type = "onelogin_oidc_apps"
@@ -64,7 +64,7 @@ func getAllApps() []models.App {
 		})
 	}
 	if err != nil {
-		log.Fatal("error retrieving apps", err)
+		log.Fatal("error retrieving apps ", err)
 	}
 	return allApps
 }

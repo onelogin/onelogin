@@ -21,6 +21,7 @@ import (
 type Shell struct {
 	ImportCommand *exec.Cmd
 	Content       []byte
+	Provider      string
 	Name          string
 	Type          string
 }
@@ -45,6 +46,7 @@ type Resource struct {
 	Content   []byte
 	Name      string             `json:"name"`
 	Type      string             `json:"type"`
+	Provider  string             `json:"provider"`
 	Instances []resourceInstance `json:"instances"`
 }
 
@@ -64,7 +66,7 @@ type instanceData struct {
 	Configuration      []models.AppConfiguration `json:"configuration"`
 }
 
-func filterFulfilledShells(f *os.File, shells []Shell) []Shell {
+func filterDuplicateShells(f *os.File, shells []Shell) []Shell {
 	resourceMatch := regexp.MustCompile(`\b(\w*resource\w*)\b\s[a-zA-Z\_]*\s[a-zA-Z\_\-]*[0-9]*\s\{`)
 	existing := make(map[string]int)
 	scanner := bufio.NewScanner(f)
@@ -87,38 +89,18 @@ func filterFulfilledShells(f *os.File, shells []Shell) []Shell {
 	return filtered
 }
 
-// SetUpTerraformFile will create or overwrite main.tf
-func SetUpTerraformFile() {
-	path, _ := os.Getwd()
-	p := filepath.Join(path, ("/main.tf"))
-	f, err := os.OpenFile(p, os.O_RDWR, 0666)
-	if err != nil {
-		log.Println("Unable to open main.tf, creating instead")
-		f, err = os.OpenFile(p, os.O_WRONLY|os.O_CREATE, 0666)
-		if err != nil {
-			log.Fatal("ERROR CREATING FILE", err)
-		}
-	}
-	defer f.Close()
-
-	log.Println("Creating Terraform Import File...")
-	buffer := []byte("provider onelogin {}\n\n")
-	f.Write(buffer)
-
-}
-
 // ImportTFState writes the resource shells to main.tf and calls each
 // resource's terraform import command to update tfstate
 func ImportTFState(shells []Shell) []Resource {
 	path, _ := os.Getwd()
 	p := filepath.Join(path, ("/main.tf"))
-	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR, 0666)
+	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		log.Println("Unable to open main.tf")
+		log.Println("Unable to open main.tf ", err)
 	}
 	defer f.Close()
 
-	shells = filterFulfilledShells(f, shells)
+	shells = filterDuplicateShells(f, shells)
 
 	if len(shells) == 0 {
 		fmt.Println("No new resources to import from remote")
@@ -135,12 +117,19 @@ func ImportTFState(shells []Shell) []Resource {
 	}
 
 	var buffer []byte
+	knownProviders := map[string]int{}
 	for _, shell := range shells {
+		if knownProviders[shell.Provider] == 0 {
+			knownProviders[shell.Provider]++
+			buffer = append(buffer, []byte(fmt.Sprintf("provider %s {}\n\n", shell.Provider))...)
+		}
 		buffer = append(buffer, shell.Content...)
 	}
 	if _, err := f.Write(buffer); err != nil {
 		log.Fatal("Problem creating import file", err)
 	}
+	log.Println("Initializing Terraform with 'terraform init'...")
+	exec.Command("terraform", "init").Run()
 
 	for i, shell := range shells {
 		log.Printf("Importing resource %d of %d", i+1, len(shells))
@@ -157,22 +146,29 @@ func ImportTFState(shells []Shell) []Resource {
 func WriteFinalMainTF(resources []Resource) {
 	path, _ := os.Getwd()
 	p := filepath.Join(path, ("/main.tf"))
-	f, err := os.OpenFile(p, os.O_RDWR, 0666)
+	f, err := os.OpenFile(p, os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error finding or creating main.tf ", err)
+		fmt.Println("Error Creating Output main.tf ", err)
 	}
 	defer f.Close()
+	knownProviders := map[string]int{}
 	log.Println("Assembling main.tf...")
-	buffer := []byte("provider onelogin {}\n\n")
+	var buffer []byte
 	for _, resource := range resources {
+		providerDefinition := strings.Replace(resource.Provider, "provider.", "", 1)
+		if knownProviders[providerDefinition] == 0 {
+			knownProviders[providerDefinition]++
+			buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", providerDefinition, providerDefinition))...)
+		}
 		for _, instance := range resource.Instances {
 			resource.Content = append(resource.Content, []byte(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))...)
+			resource.Content = append(resource.Content, []byte(fmt.Sprintf("\tprovider = %s\n", providerDefinition))...)
 			resource.Content = append(resource.Content, resourceBaseToHCL(instance.Data, 1)...)
 			resource.Content = append(resource.Content, []byte("}\n\n")...)
 		}
 		buffer = append(buffer, resource.Content...)
 	}
-	_, err = f.WriteAt(buffer, 0)
+	_, err = f.Write(buffer)
 	if err != nil {
 		fmt.Println("ERROR Writing Final main.tf", err)
 	}
