@@ -11,28 +11,28 @@ import (
 	"github.com/onelogin/onelogin-go-sdk/pkg/models"
 )
 
-func CreateImportShells() []Shell {
+func CreateImportResourceDefinitions() []ResourceDefinition {
 	fmt.Println("Collecting Apps from OneLogin...")
 
 	allApps := getAllApps()
 
-	shells := make([]Shell, len(allApps))
+	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 
 	for i, app := range allApps {
-		shell := Shell{Provider: "onelogin"}
+		resourceDefinition := ResourceDefinition{Provider: "onelogin"}
 		switch *app.AuthMethod {
 		case 8:
-			shell.Type = "onelogin_oidc_apps"
+			resourceDefinition.Type = "onelogin_oidc_apps"
 		case 2:
-			shell.Type = "onelogin_saml_apps"
+			resourceDefinition.Type = "onelogin_saml_apps"
 		default:
-			shell.Type = "onelogin_apps"
+			resourceDefinition.Type = "onelogin_apps"
 		}
-		shell.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")), *app.ID)
-		shell.PrepareTFImport()
-		shells[i] = shell
+		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")), *app.ID)
+		resourceDefinition.PrepareTFImport()
+		resourceDefinitions[i] = resourceDefinition
 	}
-	return shells
+	return resourceDefinitions
 }
 
 func getAllApps() []models.App {

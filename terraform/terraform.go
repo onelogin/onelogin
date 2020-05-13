@@ -17,8 +17,8 @@ import (
 	"github.com/onelogin/onelogin-go-sdk/pkg/models"
 )
 
-// Shell represents the resource to be imported
-type Shell struct {
+// ResourceDefinition represents the resource to be imported
+type ResourceDefinition struct {
 	ImportCommand *exec.Cmd
 	Content       []byte
 	Provider      string
@@ -28,12 +28,12 @@ type Shell struct {
 
 // PrepareTFImport creates the representation of the resource to be imported
 // with identifying information and import commands
-func (shell *Shell) PrepareTFImport() {
-	shell.Content = append(shell.Content, []byte(fmt.Sprintf("resource %s %s {}\n", shell.Type, shell.Name))...)
-	arg1 := fmt.Sprintf("%s.%s", shell.Type, shell.Name)
+func (resourceDefinition *ResourceDefinition) PrepareTFImport() {
+	resourceDefinition.Content = append(resourceDefinition.Content, []byte(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))...)
+	arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
 	pos := strings.Index(arg1, "-")
 	id := arg1[pos+1 : len(arg1)]
-	shell.ImportCommand = exec.Command("terraform", "import", arg1, id)
+	resourceDefinition.ImportCommand = exec.Command("terraform", "import", arg1, id)
 }
 
 // State in memory representation of tfstate
@@ -66,32 +66,58 @@ type instanceData struct {
 	Configuration      []models.AppConfiguration `json:"configuration"`
 }
 
-func filterDuplicateShells(f *os.File, shells []Shell) []Shell {
-	resourceMatch := regexp.MustCompile(`\b(\w*resource\w*)\b\s[a-zA-Z\_]*\s[a-zA-Z\_\-]*[0-9]*\s\{`)
-	existing := make(map[string]int)
+func filterExistingResourceDefinitions(countsFromFile map[string]int, resourceDefinitions []ResourceDefinition) []ResourceDefinition {
+	var deduped []ResourceDefinition
+	for _, resourceDefinition := range resourceDefinitions {
+		if countsFromFile[fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)] == 0 {
+			deduped = append(deduped, resourceDefinition)
+		}
+	}
+	return deduped
+}
+
+func filterExistingProviderDefinitions(countsFromFile map[string]int, resourceDefinitions []ResourceDefinition) []string {
+	var deduped []string
+	incomingProviders := map[string]int{}
+	for _, resourceDefinition := range resourceDefinitions {
+		incomingProviders[resourceDefinition.Provider]++
+	}
+	for incomingProvider := range incomingProviders {
+		if countsFromFile[fmt.Sprintf("%s.%s", incomingProvider, incomingProvider)] == 0 {
+			deduped = append(deduped, incomingProvider)
+		}
+	}
+	return deduped
+}
+
+// Scans the existing main.tf file for any existing resource and provider definitions
+// and returns a count of unique definitions
+func collectTerraformDefinitionsFromFile(f *os.File) map[string]map[string]int {
+	searchCriteria := map[string]*regexp.Regexp{
+		"provider": regexp.MustCompile(`(\w*provider\w*)\s(([a-zA-Z\_]*))\s\{`),
+		"resource": regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`),
+	}
+	collection := make(map[string]map[string]int)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		t := scanner.Text()
-		if resourceMatch.MatchString(t) {
-			if existing[t] > 0 {
-				existing[t]++
-			} else {
-				existing[t] = 1
+		for regexName, r := range searchCriteria {
+			if collection[regexName] == nil {
+				collection[regexName] = make(map[string]int)
+			}
+			subStr := r.FindStringSubmatch(t)
+			if len(subStr) > 0 {
+				definitionKey := fmt.Sprintf("%s.%s", subStr[len(subStr)-2], subStr[len(subStr)-1])
+				collection[regexName][definitionKey]++
 			}
 		}
 	}
-	var filtered []Shell
-	for _, shell := range shells {
-		if existing[strings.TrimSuffix(string(shell.Content), "}\n")] < 1 {
-			filtered = append(filtered, shell)
-		}
-	}
-	return filtered
+	return collection
 }
 
-// ImportTFState writes the resource shells to main.tf and calls each
+// ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
 // resource's terraform import command to update tfstate
-func ImportTFState(shells []Shell) []Resource {
+func ImportTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 	path, _ := os.Getwd()
 	p := filepath.Join(path, ("/main.tf"))
 	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
@@ -100,14 +126,17 @@ func ImportTFState(shells []Shell) []Resource {
 	}
 	defer f.Close()
 
-	shells = filterDuplicateShells(f, shells)
+	existingDefinitions := collectTerraformDefinitionsFromFile(f)
 
-	if len(shells) == 0 {
+	resourceDefinitions = filterExistingResourceDefinitions(existingDefinitions["resource"], resourceDefinitions)
+	if len(resourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
 		os.Exit(0)
 	}
 
-	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(shells))
+	newProviders := filterExistingProviderDefinitions(existingDefinitions["provider"], resourceDefinitions)
+
+	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(resourceDefinitions))
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	text := strings.ToLower(input.Text())
@@ -117,33 +146,35 @@ func ImportTFState(shells []Shell) []Resource {
 	}
 
 	var buffer []byte
-	knownProviders := map[string]int{}
-	for _, shell := range shells {
-		if knownProviders[shell.Provider] == 0 {
-			knownProviders[shell.Provider]++
-			buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", shell.Provider, shell.Provider))...)
-		}
-		buffer = append(buffer, shell.Content...)
+	for _, newProvider := range newProviders {
+		buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))...)
 	}
+
+	for _, resourceDefinition := range resourceDefinitions {
+		buffer = append(buffer, resourceDefinition.Content...)
+	}
+
 	if _, err := f.Write(buffer); err != nil {
 		log.Fatal("Problem creating import file", err)
 	}
 	log.Println("Initializing Terraform with 'terraform init'...")
-	exec.Command("terraform", "init").Run()
+	if err := exec.Command("terraform", "init").Run(); err != nil {
+		log.Fatal("Problem executing terraform init", err)
+	}
 
-	for i, shell := range shells {
-		log.Printf("Importing resource %d of %d", i+1, len(shells))
-		if err := shell.ImportCommand.Run(); err != nil {
-			log.Fatal("Problem executing terraform import", shell.ImportCommand.Args, err)
+	for i, resourceDefinition := range resourceDefinitions {
+		log.Printf("Importing resource %d of %d", i+1, len(resourceDefinitions))
+		if err := resourceDefinition.ImportCommand.Run(); err != nil {
+			log.Fatal("Problem executing terraform import", resourceDefinition.ImportCommand.Args, err)
 		}
 	}
-	state := readTFStateJSON()
-	return state.Resources
 }
 
-// WriteFinalMainTF reads .tfstate and updates the main.tf as if the tfstate was
+// UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
 // created with the ensuing main.tf file
-func WriteFinalMainTF(resources []Resource) {
+func UpdateMainTFFromState() {
+	state := readTFStateJSON()
+
 	path, _ := os.Getwd()
 	p := filepath.Join(path, ("/main.tf"))
 	f, err := os.OpenFile(p, os.O_WRONLY, 0644)
@@ -151,10 +182,13 @@ func WriteFinalMainTF(resources []Resource) {
 		fmt.Println("Error Creating Output main.tf ", err)
 	}
 	defer f.Close()
-	knownProviders := map[string]int{}
-	log.Println("Assembling main.tf...")
+
 	var buffer []byte
-	for _, resource := range resources {
+	knownProviders := map[string]int{}
+
+	log.Println("Assembling main.tf...")
+
+	for _, resource := range state.Resources {
 		providerDefinition := strings.Replace(resource.Provider, "provider.", "", 1)
 		if knownProviders[providerDefinition] == 0 {
 			knownProviders[providerDefinition]++

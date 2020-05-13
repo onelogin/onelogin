@@ -23,17 +23,17 @@ func init() {
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
 
-	var shells []terraform.Shell
+	var resourceDefinitions []terraform.ResourceDefinition
 
 	switch strings.ToLower(args[0]) {
 	case "apps":
-		shells = terraform.CreateImportShells()
+		resourceDefinitions = terraform.CreateImportResourceDefinitions()
 	default:
 		fmt.Println("Must specify resource to import!")
 		fmt.Println("Available resources: apps")
 		os.Exit(1)
 	}
 
-	resources := terraform.ImportTFState(shells)
-	terraform.WriteFinalMainTF(resources)
+	terraform.ImportTFStateFromRemote(resourceDefinitions)
+	terraform.UpdateMainTFFromState()
 }
