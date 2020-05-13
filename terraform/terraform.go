@@ -2,9 +2,7 @@ package terraform
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -14,8 +12,11 @@ import (
 	"strings"
 
 	"github.com/onelogin/onelogin-cli/utils"
-	"github.com/onelogin/onelogin-go-sdk/pkg/models"
 )
+
+type Importable interface {
+	ImportResourceDefinitionsFromRemote() []ResourceDefinition
+}
 
 // ResourceDefinition represents the resource to be imported
 type ResourceDefinition struct {
@@ -36,58 +37,25 @@ func (resourceDefinition *ResourceDefinition) PrepareTFImport() {
 	resourceDefinition.ImportCommand = exec.Command("terraform", "import", arg1, id)
 }
 
-// State in memory representation of tfstate
-type State struct {
-	Resources []Resource `json:"resources"`
-}
+func filterDuplicateDefinitions(countsFromFile map[string]map[string]int, resourceDefinitions []ResourceDefinition) ([]ResourceDefinition, []string) {
+	uniqueResourceDefinitions := []ResourceDefinition{}
+	uniqueProviders := []string{}
+	providerMap := map[string]int{}
 
-// Resource represents each resource type's list of resources
-type Resource struct {
-	Content   []byte
-	Name      string             `json:"name"`
-	Type      string             `json:"type"`
-	Provider  string             `json:"provider"`
-	Instances []resourceInstance `json:"instances"`
-}
-
-type resourceInstance struct {
-	Data instanceData `json:"attributes"`
-}
-
-type instanceData struct {
-	AllowAssumedSignin *bool                     `json:"allow_assumed_signin"`
-	ConnectorID        *int                      `json:"connector_id"`
-	Description        *string                   `json:"description"`
-	Name               *string                   `json:"name"`
-	Notes              *string                   `json:"notes"`
-	Visible            *bool                     `json:"visible"`
-	Provisioning       []models.AppProvisioning  `json:"provisioning"`
-	Parameters         []models.AppParameters    `json:"parameters"`
-	Configuration      []models.AppConfiguration `json:"configuration"`
-}
-
-func filterExistingResourceDefinitions(countsFromFile map[string]int, resourceDefinitions []ResourceDefinition) []ResourceDefinition {
-	var deduped []ResourceDefinition
 	for _, resourceDefinition := range resourceDefinitions {
-		if countsFromFile[fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)] == 0 {
-			deduped = append(deduped, resourceDefinition)
+		providerMap[resourceDefinition.Provider]++
+		if countsFromFile["resource"][fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)] == 0 {
+			uniqueResourceDefinitions = append(uniqueResourceDefinitions, resourceDefinition)
 		}
 	}
-	return deduped
-}
 
-func filterExistingProviderDefinitions(countsFromFile map[string]int, resourceDefinitions []ResourceDefinition) []string {
-	var deduped []string
-	incomingProviders := map[string]int{}
-	for _, resourceDefinition := range resourceDefinitions {
-		incomingProviders[resourceDefinition.Provider]++
-	}
-	for incomingProvider := range incomingProviders {
-		if countsFromFile[fmt.Sprintf("%s.%s", incomingProvider, incomingProvider)] == 0 {
-			deduped = append(deduped, incomingProvider)
+	for provider := range providerMap {
+		if countsFromFile["provider"][fmt.Sprintf("%s.%s", provider, provider)] == 0 {
+			uniqueProviders = append(uniqueProviders, provider)
 		}
 	}
-	return deduped
+
+	return uniqueResourceDefinitions, uniqueProviders
 }
 
 // Scans the existing main.tf file for any existing resource and provider definitions
@@ -117,7 +85,8 @@ func collectTerraformDefinitionsFromFile(f *os.File) map[string]map[string]int {
 
 // ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
 // resource's terraform import command to update tfstate
-func ImportTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
+func ImportTFStateFromRemote(importable Importable) {
+	newResourceDefinitions := importable.ImportResourceDefinitionsFromRemote()
 	path, _ := os.Getwd()
 	p := filepath.Join(path, ("/main.tf"))
 	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
@@ -128,15 +97,13 @@ func ImportTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 
 	existingDefinitions := collectTerraformDefinitionsFromFile(f)
 
-	resourceDefinitions = filterExistingResourceDefinitions(existingDefinitions["resource"], resourceDefinitions)
-	if len(resourceDefinitions) == 0 {
+	newResourceDefinitions, newProviderDefinitions := filterDuplicateDefinitions(existingDefinitions, newResourceDefinitions)
+	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
 		os.Exit(0)
 	}
 
-	newProviders := filterExistingProviderDefinitions(existingDefinitions["provider"], resourceDefinitions)
-
-	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(resourceDefinitions))
+	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(newResourceDefinitions))
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	text := strings.ToLower(input.Text())
@@ -146,24 +113,24 @@ func ImportTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 	}
 
 	var buffer []byte
-	for _, newProvider := range newProviders {
+	for _, newProvider := range newProviderDefinitions {
 		buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))...)
 	}
 
-	for _, resourceDefinition := range resourceDefinitions {
+	for _, resourceDefinition := range newResourceDefinitions {
 		buffer = append(buffer, resourceDefinition.Content...)
 	}
 
 	if _, err := f.Write(buffer); err != nil {
 		log.Fatal("Problem creating import file", err)
 	}
+
 	log.Println("Initializing Terraform with 'terraform init'...")
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		log.Fatal("Problem executing terraform init", err)
 	}
-
-	for i, resourceDefinition := range resourceDefinitions {
-		log.Printf("Importing resource %d of %d", i+1, len(resourceDefinitions))
+	for i, resourceDefinition := range newResourceDefinitions {
+		log.Printf("Importing resource %d of %d", i+1, len(newResourceDefinitions))
 		if err := resourceDefinition.ImportCommand.Run(); err != nil {
 			log.Fatal("Problem executing terraform import", resourceDefinition.ImportCommand.Args, err)
 		}
@@ -173,8 +140,6 @@ func ImportTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 // UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
 // created with the ensuing main.tf file
 func UpdateMainTFFromState() {
-	state := readTFStateJSON()
-
 	path, _ := os.Getwd()
 	p := filepath.Join(path, ("/main.tf"))
 	f, err := os.OpenFile(p, os.O_WRONLY, 0644)
@@ -187,7 +152,8 @@ func UpdateMainTFFromState() {
 	knownProviders := map[string]int{}
 
 	log.Println("Assembling main.tf...")
-
+	state := State{}
+	state.Initialize()
 	for _, resource := range state.Resources {
 		providerDefinition := strings.Replace(resource.Provider, "provider.", "", 1)
 		if knownProviders[providerDefinition] == 0 {
@@ -206,23 +172,6 @@ func UpdateMainTFFromState() {
 	if err != nil {
 		fmt.Println("ERROR Writing Final main.tf", err)
 	}
-}
-
-func readTFStateJSON() State {
-	log.Println("Collecting State from State File")
-
-	path, _ := os.Getwd()
-	p := filepath.Join(path, "/terraform.tfstate")
-	data, err := ioutil.ReadFile(p)
-	if err != nil {
-		log.Fatal("Unable to Read tfstate")
-	}
-	v := State{}
-
-	if err := json.Unmarshal(data, &v); err != nil {
-		log.Fatal("Unable to Translate tfstate in Memory")
-	}
-	return v
 }
 
 func resourceBaseToHCL(input interface{}, indentLevel int) []byte {

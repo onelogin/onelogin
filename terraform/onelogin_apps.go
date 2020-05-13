@@ -11,10 +11,14 @@ import (
 	"github.com/onelogin/onelogin-go-sdk/pkg/models"
 )
 
-func CreateImportResourceDefinitions() []ResourceDefinition {
+type OneloginAppsImportable struct {
+	AppType string
+}
+
+func (i OneloginAppsImportable) ImportResourceDefinitionsFromRemote() []ResourceDefinition {
 	fmt.Println("Collecting Apps from OneLogin...")
 
-	allApps := getAllApps()
+	allApps := getAllApps(i.AppType)
 
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 
@@ -35,7 +39,7 @@ func CreateImportResourceDefinitions() []ResourceDefinition {
 	return resourceDefinitions
 }
 
-func getAllApps() []models.App {
+func getAllApps(appType string) []models.App {
 	var (
 		resp    *http.Response
 		apps    []models.App
@@ -44,6 +48,13 @@ func getAllApps() []models.App {
 		next    string
 	)
 
+	appTypeQueryMap := map[string]string{
+		"onelogin_apps":      "",
+		"onelogin_saml_apps": "2",
+		"onelogin_oidc_apps": "8",
+	}
+	requestedAppType := appTypeQueryMap[appType]
+
 	sdkClient, _ := client.NewClient(&client.APIClientConfig{
 		Timeout:      5,
 		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
@@ -51,7 +62,9 @@ func getAllApps() []models.App {
 		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
 	})
 
-	resp, apps, err = sdkClient.Services.AppsV2.GetApps(&models.AppsQuery{})
+	resp, apps, err = sdkClient.Services.AppsV2.GetApps(&models.AppsQuery{
+		AuthMethod: requestedAppType,
+	})
 
 	for {
 		allApps = append(allApps, apps...)
@@ -60,7 +73,8 @@ func getAllApps() []models.App {
 			break
 		}
 		resp, apps, err = sdkClient.Services.AppsV2.GetApps(&models.AppsQuery{
-			Cursor: next,
+			AuthMethod: requestedAppType,
+			Cursor:     next,
 		})
 	}
 	if err != nil {
