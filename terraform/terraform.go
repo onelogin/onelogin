@@ -2,8 +2,10 @@ package terraform
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -27,6 +29,70 @@ type ResourceDefinition struct {
 	Type     string
 }
 
+// ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
+// resource's terraform import command to update tfstate
+func ImportTFStateFromRemote(importable Importable) {
+	path, _ := os.Getwd()
+	p := filepath.Join(path, ("/main.tf"))
+	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		log.Fatalln("Unable to open main.tf ", err)
+	}
+	defer f.Close()
+
+	newResourceDefinitions := importable.ImportResourceDefinitionsFromRemote()
+	existingDefinitions := collectTerraformDefinitionsFromFile(f)
+	newResourceDefinitions, newProviderDefinitions := filterExistingDefinitions(existingDefinitions, newResourceDefinitions)
+
+	if len(newResourceDefinitions) == 0 {
+		fmt.Println("No new resources to import from remote")
+		os.Exit(0)
+	}
+
+	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(newResourceDefinitions))
+	input := bufio.NewScanner(os.Stdin)
+	input.Scan()
+	text := strings.ToLower(input.Text())
+	if text != "y" && text != "yes" {
+		fmt.Printf("User aborted operation!")
+		os.Exit(0)
+	}
+
+	appendDefinitionsToMainTF(f, newResourceDefinitions, newProviderDefinitions)
+	importTFStateFromRemote(newResourceDefinitions)
+}
+
+// UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
+// created with the ensuing main.tf file
+func UpdateMainTFFromState() {
+	path, _ := os.Getwd()
+	f, err := os.OpenFile(filepath.Join(path, ("/main.tf")), os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Error Creating Output main.tf ", err)
+	}
+	defer f.Close()
+
+	state := State{}
+	log.Println("Collecting State from tfstate File")
+	data, err := ioutil.ReadFile(filepath.Join(path, "/terraform.tfstate"))
+	if err != nil {
+		log.Fatal("Unable to Read tfstate")
+	}
+
+	if err := json.Unmarshal(data, &state); err != nil {
+		log.Fatal("Unable to Translate tfstate in Memory")
+	}
+
+	buffer := convertTFStateToHCL(state)
+
+	_, err = f.Write(buffer)
+	if err != nil {
+		fmt.Println("ERROR Writing Final main.tf", err)
+	}
+}
+
+// compares incoming resources from remote to what is already defined in the main.tf
+// file to prevent duplicate definitions which breaks terraform import
 func filterExistingDefinitions(countsFromFile map[string]map[string]int, resourceDefinitions []ResourceDefinition) ([]ResourceDefinition, []string) {
 	uniqueResourceDefinitions := []ResourceDefinition{}
 	uniqueProviders := []string{}
@@ -79,61 +145,8 @@ func collectTerraformDefinitionsFromFile(f io.Reader) map[string]map[string]int 
 	return collection
 }
 
-// ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
-// resource's terraform import command to update tfstate
-func ImportTFStateFromRemote(importable Importable) {
-	path, _ := os.Getwd()
-	p := filepath.Join(path, ("/main.tf"))
-	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatalln("Unable to open main.tf ", err)
-	}
-	defer f.Close()
-
-	newResourceDefinitions := importable.ImportResourceDefinitionsFromRemote()
-	existingDefinitions := collectTerraformDefinitionsFromFile(f)
-	newResourceDefinitions, newProviderDefinitions := filterExistingDefinitions(existingDefinitions, newResourceDefinitions)
-
-	if len(newResourceDefinitions) == 0 {
-		fmt.Println("No new resources to import from remote")
-		os.Exit(0)
-	}
-
-	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(newResourceDefinitions))
-	input := bufio.NewScanner(os.Stdin)
-	input.Scan()
-	text := strings.ToLower(input.Text())
-	if text != "y" && text != "yes" {
-		fmt.Printf("User aborted operation!")
-		os.Exit(0)
-	}
-
-	appendDefinitionsToMainTF(f, newResourceDefinitions, newProviderDefinitions)
-	importTFStateFromRemote(newResourceDefinitions)
-}
-
-// UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
-// created with the ensuing main.tf file
-func UpdateMainTFFromState() {
-	path, _ := os.Getwd()
-	p := filepath.Join(path, ("/main.tf"))
-	f, err := os.OpenFile(p, os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Error Creating Output main.tf ", err)
-	}
-	defer f.Close()
-
-	state := State{}
-	state.Initialize()
-
-	buffer := convertTFStateToHCL(state)
-
-	_, err = f.Write(buffer)
-	if err != nil {
-		fmt.Println("ERROR Writing Final main.tf", err)
-	}
-}
-
+// takes the tfstate representations formats them as HCL and writes them to a bytes buffer
+// so it can be flushed into main.tf
 func convertTFStateToHCL(state State) []byte {
 	var buffer []byte
 	knownProviders := map[string]int{}
@@ -157,6 +170,8 @@ func convertTFStateToHCL(state State) []byte {
 	return buffer
 }
 
+// recursively converts a chunk of data from it's struct representation to its HCL representation
+// and appends the "line" to a bytes buffer.
 func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 	var out []byte
 
@@ -195,6 +210,7 @@ func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 	return out
 }
 
+// in preparation for terraform import, appends empty resource definitions to the existing main.tf file
 func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []ResourceDefinition, providerDefinitions []string) {
 	var buffer []byte
 	for _, newProvider := range providerDefinitions {
@@ -210,6 +226,7 @@ func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []ResourceDe
 	}
 }
 
+// loops over the resources to import and calls terraform import with the required resoruce arguments
 func importTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 	log.Println("Initializing Terraform with 'terraform init'...")
 	if err := exec.Command("terraform", "init").Run(); err != nil {
