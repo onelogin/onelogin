@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/onelogin/onelogin-cli/utils"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
@@ -12,13 +11,45 @@ import (
 )
 
 type OneloginAppsImportable struct {
-	AppType string
+	ProviderClient *client.APIClient
+	AppType        string
 }
 
 func (i OneloginAppsImportable) ImportResourceDefinitionsFromRemote() []ResourceDefinition {
 	fmt.Println("Collecting Apps from OneLogin...")
+	var (
+		resp    *http.Response
+		apps    []models.App
+		allApps []models.App
+		err     error
+		next    string
+	)
 
-	allApps := getAllApps(i.AppType)
+	appTypeQueryMap := map[string]string{
+		"onelogin_apps":      "",
+		"onelogin_saml_apps": "2",
+		"onelogin_oidc_apps": "8",
+	}
+	requestedAppType := appTypeQueryMap[i.AppType]
+
+	resp, apps, err = i.ProviderClient.Services.AppsV2.GetApps(&models.AppsQuery{
+		AuthMethod: requestedAppType,
+	})
+
+	for {
+		allApps = append(allApps, apps...)
+		next = resp.Header.Get("After-Cursor")
+		if next == "" || err != nil {
+			break
+		}
+		resp, apps, err = i.ProviderClient.Services.AppsV2.GetApps(&models.AppsQuery{
+			AuthMethod: requestedAppType,
+			Cursor:     next,
+		})
+	}
+	if err != nil {
+		log.Fatal("error retrieving apps ", err)
+	}
 
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 
@@ -33,52 +64,7 @@ func (i OneloginAppsImportable) ImportResourceDefinitionsFromRemote() []Resource
 			resourceDefinition.Type = "onelogin_apps"
 		}
 		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")), *app.ID)
-		resourceDefinition.PrepareTFImport()
 		resourceDefinitions[i] = resourceDefinition
 	}
 	return resourceDefinitions
-}
-
-func getAllApps(appType string) []models.App {
-	var (
-		resp    *http.Response
-		apps    []models.App
-		allApps []models.App
-		err     error
-		next    string
-	)
-
-	appTypeQueryMap := map[string]string{
-		"onelogin_apps":      "",
-		"onelogin_saml_apps": "2",
-		"onelogin_oidc_apps": "8",
-	}
-	requestedAppType := appTypeQueryMap[appType]
-
-	sdkClient, _ := client.NewClient(&client.APIClientConfig{
-		Timeout:      5,
-		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
-		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
-		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
-	})
-
-	resp, apps, err = sdkClient.Services.AppsV2.GetApps(&models.AppsQuery{
-		AuthMethod: requestedAppType,
-	})
-
-	for {
-		allApps = append(allApps, apps...)
-		next = resp.Header.Get("After-Cursor")
-		if next == "" || err != nil {
-			break
-		}
-		resp, apps, err = sdkClient.Services.AppsV2.GetApps(&models.AppsQuery{
-			AuthMethod: requestedAppType,
-			Cursor:     next,
-		})
-	}
-	if err != nil {
-		log.Fatal("error retrieving apps ", err)
-	}
-	return allApps
 }

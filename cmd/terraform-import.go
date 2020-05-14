@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/onelogin/onelogin-cli/terraform"
+	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -32,11 +34,25 @@ func init() {
 
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
+	oneloginClient, _ := client.NewClient(&client.APIClientConfig{
+		Timeout:      5,
+		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
+		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
+		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
+	})
 
 	importables := map[string]terraform.Importable{
-		"onelogin_apps":      terraform.OneloginAppsImportable{},
-		"onelogin_saml_apps": terraform.OneloginAppsImportable{AppType: "onelogin_saml_apps"},
-		"onelogin_oidc_apps": terraform.OneloginAppsImportable{AppType: "onelogin_oidc_apps"},
+		"onelogin_apps": terraform.OneloginAppsImportable{
+			ProviderClient: oneloginClient,
+		},
+		"onelogin_saml_apps": terraform.OneloginAppsImportable{
+			ProviderClient: oneloginClient,
+			AppType:        "onelogin_saml_apps",
+		},
+		"onelogin_oidc_apps": terraform.OneloginAppsImportable{
+			ProviderClient: oneloginClient,
+			AppType:        "onelogin_oidc_apps",
+		},
 	}
 
 	importable, ok := importables[strings.ToLower(args[0])]
