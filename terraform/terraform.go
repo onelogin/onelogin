@@ -44,7 +44,9 @@ func ImportTFStateFromRemote(importable Importable) {
 
 	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
-		f.Close()
+		if err := f.Close(); err != nil {
+			fmt.Println("Problem writing file", err)
+		}
 		os.Exit(0)
 	}
 
@@ -54,13 +56,17 @@ func ImportTFStateFromRemote(importable Importable) {
 	text := strings.ToLower(input.Text())
 	if text != "y" && text != "yes" {
 		fmt.Printf("User aborted operation!")
-		f.Close()
+		if err := f.Close(); err != nil {
+			fmt.Println("Problem writing file", err)
+		}
 		os.Exit(0)
 	}
 
 	appendDefinitionsToMainTF(f, newResourceDefinitions, newProviderDefinitions)
 	importTFStateFromRemote(newResourceDefinitions)
-	f.Close()
+	if err := f.Close(); err != nil {
+		fmt.Println("Problem writing file", err)
+	}
 }
 
 // UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
@@ -75,12 +81,16 @@ func UpdateMainTFFromState() {
 	log.Println("Collecting State from tfstate File")
 	data, err := ioutil.ReadFile(filepath.Join("terraform.tfstate"))
 	if err != nil {
-		f.Close()
+		if err := f.Close(); err != nil {
+			fmt.Println("Problem writing file", err)
+		}
 		log.Fatal("Unable to Read tfstate")
 	}
 
 	if err := json.Unmarshal(data, &state); err != nil {
-		f.Close()
+		if err := f.Close(); err != nil {
+			fmt.Println("Problem writing file", err)
+		}
 		log.Fatal("Unable to Translate tfstate in Memory")
 	}
 
@@ -88,10 +98,14 @@ func UpdateMainTFFromState() {
 
 	_, err = f.Write(buffer)
 	if err != nil {
-		f.Close()
+		if err := f.Close(); err != nil {
+			fmt.Println("Problem writing file", err)
+		}
 		fmt.Println("ERROR Writing Final main.tf", err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		fmt.Println("Problem writing file", err)
+	}
 }
 
 // compares incoming resources from remote to what is already defined in the main.tf
