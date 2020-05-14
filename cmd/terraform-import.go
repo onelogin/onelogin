@@ -34,12 +34,15 @@ func init() {
 
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
-	oneloginClient, _ := client.NewClient(&client.APIClientConfig{
+	oneloginClient, err := client.NewClient(&client.APIClientConfig{
 		Timeout:      5,
 		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
 		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
 		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
 	})
+	if err != nil {
+		log.Fatalln("Unable to connect to remote!", err)
+	}
 
 	importables := map[string]terraform.Importable{
 		"onelogin_apps": terraform.OneloginAppsImportable{

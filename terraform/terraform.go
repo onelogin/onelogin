@@ -32,9 +32,8 @@ type ResourceDefinition struct {
 // ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
 // resource's terraform import command to update tfstate
 func ImportTFStateFromRemote(importable Importable) {
-	path, _ := os.Getwd()
-	p := filepath.Join(path, ("/main.tf"))
-	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
+	p := filepath.Join("main.tf")
+	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
@@ -65,8 +64,7 @@ func ImportTFStateFromRemote(importable Importable) {
 // UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
 // created with the ensuing main.tf file
 func UpdateMainTFFromState() {
-	path, _ := os.Getwd()
-	f, err := os.OpenFile(filepath.Join(path, ("/main.tf")), os.O_WRONLY, 0644)
+	f, err := os.OpenFile(filepath.Join("main.tf"), os.O_WRONLY, 0600)
 	if err != nil {
 		fmt.Println("Error Creating Output main.tf ", err)
 	}
@@ -74,7 +72,7 @@ func UpdateMainTFFromState() {
 
 	state := State{}
 	log.Println("Collecting State from tfstate File")
-	data, err := ioutil.ReadFile(filepath.Join(path, "/terraform.tfstate"))
+	data, err := ioutil.ReadFile(filepath.Join("terraform.tfstate"))
 	if err != nil {
 		log.Fatal("Unable to Read tfstate")
 	}
@@ -227,6 +225,8 @@ func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []ResourceDe
 }
 
 // loops over the resources to import and calls terraform import with the required resoruce arguments
+
+// #nosec
 func importTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 	log.Println("Initializing Terraform with 'terraform init'...")
 	if err := exec.Command("terraform", "init").Run(); err != nil {
