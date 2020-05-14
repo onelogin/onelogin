@@ -186,7 +186,7 @@ func TestResourceBaseToHCL(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := resourceBaseToHCL(test.InputInstance, 1)
+			actual := convertToHCLByteSlice(test.InputInstance, 1)
 			assert.Equal(t, test.ExpectedOut, actual)
 		})
 	}

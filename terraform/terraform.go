@@ -109,7 +109,7 @@ func ImportTFStateFromRemote(importable Importable) {
 	}
 
 	appendDefinitionsToMainTF(f, newResourceDefinitions, newProviderDefinitions)
-	createTFStateFromRemote(newResourceDefinitions)
+	importTFStateFromRemote(newResourceDefinitions)
 }
 
 // UpdateMainTFFromState reads .tfstate and updates the main.tf as if the tfstate was
@@ -149,7 +149,7 @@ func convertTFStateToHCL(state State) []byte {
 		for _, instance := range resource.Instances {
 			resource.Content = append(resource.Content, []byte(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))...)
 			resource.Content = append(resource.Content, []byte(fmt.Sprintf("\tprovider = %s\n", providerDefinition))...)
-			resource.Content = append(resource.Content, resourceBaseToHCL(instance.Data, 1)...)
+			resource.Content = append(resource.Content, convertToHCLByteSlice(instance.Data, 1)...)
 			resource.Content = append(resource.Content, []byte("}\n\n")...)
 		}
 		buffer = append(buffer, resource.Content...)
@@ -157,7 +157,7 @@ func convertTFStateToHCL(state State) []byte {
 	return buffer
 }
 
-func resourceBaseToHCL(input interface{}, indentLevel int) []byte {
+func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 	var out []byte
 
 	tp := reflect.TypeOf(input)
@@ -186,7 +186,7 @@ func resourceBaseToHCL(input interface{}, indentLevel int) []byte {
 			case reflect.Array, reflect.Slice:
 				for j := 0; j < field.Len(); j++ {
 					out = append(out, []byte(strings.ToLower(fmt.Sprintf("\n\t%s {\n", tp.Field(i).Name)))...)
-					out = append(out, resourceBaseToHCL(field.Index(j).Interface(), indentLevel+1)...)
+					out = append(out, convertToHCLByteSlice(field.Index(j).Interface(), indentLevel+1)...)
 					out = append(out, []byte("\t}\n")...)
 				}
 			}
@@ -210,17 +210,17 @@ func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []ResourceDe
 	}
 }
 
-func createTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
+func importTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
 	log.Println("Initializing Terraform with 'terraform init'...")
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		log.Fatal("Problem executing terraform init", err)
 	}
 	for i, resourceDefinition := range resourceDefinitions {
-		log.Printf("Importing resource %d of %d", i+1, len(resourceDefinitions))
 		arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
 		pos := strings.Index(arg1, "-")
 		id := arg1[pos+1 : len(arg1)]
 		cmd := exec.Command("terraform", "import", arg1, id)
+		log.Printf("Importing resource %d", i+1)
 		if err := cmd.Run(); err != nil {
 			log.Fatal("Problem executing terraform import", cmd.Args, err)
 		}
