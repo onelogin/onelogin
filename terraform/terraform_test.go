@@ -40,7 +40,7 @@ func TestFilterExistingDefinitions(t *testing.T) {
 					"onelogin_apps.defined_in_main.tf_already": 1,
 				},
 				"provider": map[string]int{
-					"onelogin.onelogin": 1,
+					"onelogin": 1,
 				},
 			},
 			InputResourceDefinitions: []ResourceDefinition{

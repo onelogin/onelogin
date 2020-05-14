@@ -40,7 +40,7 @@ func filterExistingDefinitions(countsFromFile map[string]map[string]int, resourc
 	}
 
 	for provider := range providerMap {
-		if countsFromFile["provider"][fmt.Sprintf("%s.%s", provider, provider)] == 0 {
+		if countsFromFile["provider"][provider] == 0 {
 			uniqueProviders = append(uniqueProviders, provider)
 		}
 	}
