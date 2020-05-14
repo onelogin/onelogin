@@ -7,4 +7,5 @@ require (
 	github.com/onelogin/onelogin-go-sdk v0.1.8
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.6.3
+	github.com/stretchr/testify v1.4.0
 )
