@@ -18,7 +18,7 @@ import (
 )
 
 type Importable interface {
-	ImportResourceDefinitionsFromRemote() []ResourceDefinition
+	ImportFromRemote() []ResourceDefinition
 }
 
 // ResourceDefinition represents the resource to be imported
@@ -40,7 +40,7 @@ func ImportTFStateFromRemote(importable Importable) {
 	}
 	defer f.Close()
 
-	newResourceDefinitions := importable.ImportResourceDefinitionsFromRemote()
+	newResourceDefinitions := importable.ImportFromRemote()
 	existingDefinitions := collectTerraformDefinitionsFromFile(f)
 	newResourceDefinitions, newProviderDefinitions := filterExistingDefinitions(existingDefinitions, newResourceDefinitions)
 

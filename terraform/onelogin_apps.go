@@ -17,7 +17,7 @@ type OneloginAppsImportable struct {
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
-func (i OneloginAppsImportable) ImportResourceDefinitionsFromRemote() []ResourceDefinition {
+func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
 	fmt.Println("Collecting Apps from OneLogin...")
 	allApps := i.GetAllApps()
 	resourceDefinitions := assembleResourceDefinitions(allApps)
