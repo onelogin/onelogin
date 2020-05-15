@@ -1,4 +1,7 @@
-on: release
+on:
+  push:
+    tags:
+    - '*'
 name: Build
 jobs:
   goreleaser:
