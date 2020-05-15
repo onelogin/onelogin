@@ -25,9 +25,9 @@ You'll be prompted to confirm importing apps. This will capture the state of you
 If you have some resources already set up in main.tf, this will merge your main.tf with resources from the remote
 
 ## Supported Resources
-`onelogin_apps` => returns all apps
-`onelogin_saml_apps` => returns saml apps only
-`onelogin_oidc_apps` => returns oidc apps only
+* `onelogin_apps` => returns all apps
+* `onelogin_saml_apps` => returns saml apps only
+* `onelogin_oidc_apps` => returns oidc apps only
 
 ## Contributing
 
