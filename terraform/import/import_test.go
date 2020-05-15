@@ -1,4 +1,4 @@
-package terraform
+package tfimport
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/onelogin/onelogin-cli/terraform/importables"
 	"github.com/onelogin/onelogin-go-sdk/pkg/models"
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
 	"github.com/stretchr/testify/assert"
@@ -30,8 +31,8 @@ func (m *MockFile) Read(p []byte) (int, error) {
 func TestFilterExistingDefinitions(t *testing.T) {
 	tests := map[string]struct {
 		InputFileCounts             map[string]map[string]int
-		InputResourceDefinitions    []ResourceDefinition
-		ExpectedResourceDefinitions []ResourceDefinition
+		InputResourceDefinitions    []tfimportables.ResourceDefinition
+		ExpectedResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedProviders           []string
 	}{
 		"it yields lists of resource definitions and providers not already defined in main.tf": {
@@ -43,40 +44,40 @@ func TestFilterExistingDefinitions(t *testing.T) {
 					"onelogin": 1,
 				},
 			},
-			InputResourceDefinitions: []ResourceDefinition{
-				ResourceDefinition{
+			InputResourceDefinitions: []tfimportables.ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "onelogin",
 					Name:     "defined_in_main.tf_already",
 					Type:     "onelogin_apps",
 				},
-				ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "onelogin",
 					Name:     "new_resource",
 					Type:     "onelogin_apps",
 				},
-				ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "onelogin",
 					Name:     "test",
 					Type:     "onelogin_saml_apps",
 				},
-				ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "okra",
 					Name:     "test",
 					Type:     "okra_saml_apps",
 				},
 			},
-			ExpectedResourceDefinitions: []ResourceDefinition{
-				ResourceDefinition{
+			ExpectedResourceDefinitions: []tfimportables.ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "onelogin",
 					Name:     "new_resource",
 					Type:     "onelogin_apps",
 				},
-				ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "onelogin",
 					Name:     "test",
 					Type:     "onelogin_saml_apps",
 				},
-				ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Provider: "okra",
 					Name:     "test",
 					Type:     "okra_saml_apps",
@@ -195,20 +196,20 @@ func TestResourceBaseToHCL(t *testing.T) {
 func TestAppendDefinitionsToMainTF(t *testing.T) {
 	tests := map[string]struct {
 		InputWriter              io.ReadWriter
-		InputResourceDefinitions []ResourceDefinition
+		InputResourceDefinitions []tfimportables.ResourceDefinition
 		InputProviderDefinitions []string
 		ExpectedOut              []byte
 	}{
 		"it adds provider and resource to the writer": {
 			InputWriter: &MockFile{},
-			InputResourceDefinitions: []ResourceDefinition{
-				ResourceDefinition{
+			InputResourceDefinitions: []tfimportables.ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Content:  []byte{},
 					Name:     "test",
 					Type:     "test",
 					Provider: "test",
 				},
-				ResourceDefinition{
+				tfimportables.ResourceDefinition{
 					Content:  []byte{},
 					Name:     "test",
 					Type:     "test",

@@ -1,9 +1,10 @@
-package terraform
+package tfimportables
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/onelogin/onelogin-cli/utils"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
@@ -11,15 +12,23 @@ import (
 )
 
 type OneloginAppsImportable struct {
-	ProviderClient *client.APIClient
-	AppType        string
+	AppType string
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
 func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
 	fmt.Println("Collecting Apps from OneLogin...")
-	allApps := i.GetAllApps()
+	oneloginClient, err := client.NewClient(&client.APIClientConfig{
+		Timeout:      5,
+		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
+		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
+		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
+	})
+	if err != nil {
+		log.Fatalln("Unable to connect to remote!", err)
+	}
+	allApps := i.GetAllApps(oneloginClient)
 	resourceDefinitions := assembleResourceDefinitions(allApps)
 	return resourceDefinitions
 }
@@ -44,7 +53,7 @@ func assembleResourceDefinitions(allApps []models.App) []ResourceDefinition {
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginAppsImportable) GetAllApps() []models.App {
+func (i OneloginAppsImportable) GetAllApps(client *client.APIClient) []models.App {
 	var (
 		resp    *http.Response
 		apps    []models.App
@@ -60,7 +69,7 @@ func (i OneloginAppsImportable) GetAllApps() []models.App {
 	}
 	requestedAppType := appTypeQueryMap[i.AppType]
 
-	resp, apps, err = i.ProviderClient.Services.AppsV2.GetApps(&models.AppsQuery{
+	resp, apps, err = client.Services.AppsV2.GetApps(&models.AppsQuery{
 		AuthMethod: requestedAppType,
 	})
 
@@ -70,7 +79,7 @@ func (i OneloginAppsImportable) GetAllApps() []models.App {
 		if next == "" || err != nil {
 			break
 		}
-		resp, apps, err = i.ProviderClient.Services.AppsV2.GetApps(&models.AppsQuery{
+		resp, apps, err = client.Services.AppsV2.GetApps(&models.AppsQuery{
 			AuthMethod: requestedAppType,
 			Cursor:     next,
 		})

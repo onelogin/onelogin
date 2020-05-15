@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
-	"github.com/onelogin/onelogin-cli/terraform"
-	"github.com/onelogin/onelogin-go-sdk/pkg/client"
+	"github.com/onelogin/onelogin-cli/terraform/import"
+	"github.com/onelogin/onelogin-cli/terraform/importables"
+
 	"github.com/spf13/cobra"
 )
 
@@ -34,28 +34,11 @@ func init() {
 
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
-	oneloginClient, err := client.NewClient(&client.APIClientConfig{
-		Timeout:      5,
-		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
-		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
-		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
-	})
-	if err != nil {
-		log.Fatalln("Unable to connect to remote!", err)
-	}
 
-	importables := map[string]terraform.Importable{
-		"onelogin_apps": terraform.OneloginAppsImportable{
-			ProviderClient: oneloginClient,
-		},
-		"onelogin_saml_apps": terraform.OneloginAppsImportable{
-			ProviderClient: oneloginClient,
-			AppType:        "onelogin_saml_apps",
-		},
-		"onelogin_oidc_apps": terraform.OneloginAppsImportable{
-			ProviderClient: oneloginClient,
-			AppType:        "onelogin_oidc_apps",
-		},
+	importables := map[string]tfimportables.Importable{
+		"onelogin_apps":      tfimportables.OneloginAppsImportable{},
+		"onelogin_saml_apps": tfimportables.OneloginAppsImportable{AppType: "onelogin_saml_apps"},
+		"onelogin_oidc_apps": tfimportables.OneloginAppsImportable{AppType: "onelogin_oidc_apps"},
 	}
 
 	importable, ok := importables[strings.ToLower(args[0])]
@@ -69,6 +52,6 @@ func terraformImport(cmd *cobra.Command, args []string) {
 		log.Fatalf("Available resources: %s", availableImportables)
 	}
 
-	terraform.ImportTFStateFromRemote(importable)
-	terraform.UpdateMainTFFromState()
+	tfimport.ImportTFStateFromRemote(importable)
+	tfimport.UpdateMainTFFromState()
 }

@@ -1,4 +1,4 @@
-package terraform
+package tfimport
 
 import (
 	"github.com/onelogin/onelogin-go-sdk/pkg/models"

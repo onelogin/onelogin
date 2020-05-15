@@ -1,4 +1,4 @@
-package terraform
+package tfimport
 
 import (
 	"bufio"
@@ -14,24 +14,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/onelogin/onelogin-cli/terraform/importables"
 	"github.com/onelogin/onelogin-cli/utils"
 )
 
-type Importable interface {
-	ImportFromRemote() []ResourceDefinition
-}
-
-// ResourceDefinition represents the resource to be imported
-type ResourceDefinition struct {
-	Content  []byte
-	Provider string
-	Name     string
-	Type     string
-}
-
 // ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
 // resource's terraform import command to update tfstate
-func ImportTFStateFromRemote(importable Importable) {
+func ImportTFStateFromRemote(importable tfimportables.Importable) {
 	p := filepath.Join("main.tf")
 	f, err := os.OpenFile(p, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
@@ -110,8 +99,8 @@ func UpdateMainTFFromState() {
 
 // compares incoming resources from remote to what is already defined in the main.tf
 // file to prevent duplicate definitions which breaks terraform import
-func filterExistingDefinitions(countsFromFile map[string]map[string]int, resourceDefinitions []ResourceDefinition) ([]ResourceDefinition, []string) {
-	uniqueResourceDefinitions := []ResourceDefinition{}
+func filterExistingDefinitions(countsFromFile map[string]map[string]int, resourceDefinitions []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
+	uniqueResourceDefinitions := []tfimportables.ResourceDefinition{}
 	uniqueProviders := []string{}
 	providerMap := map[string]int{}
 
@@ -228,7 +217,7 @@ func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 }
 
 // in preparation for terraform import, appends empty resource definitions to the existing main.tf file
-func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []ResourceDefinition, providerDefinitions []string) {
+func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string) {
 	var buffer []byte
 	for _, newProvider := range providerDefinitions {
 		buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))...)
@@ -246,7 +235,7 @@ func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []ResourceDe
 // loops over the resources to import and calls terraform import with the required resoruce arguments
 
 // #nosec
-func importTFStateFromRemote(resourceDefinitions []ResourceDefinition) {
+func importTFStateFromRemote(resourceDefinitions []tfimportables.ResourceDefinition) {
 	log.Println("Initializing Terraform with 'terraform init'...")
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		log.Fatal("Problem executing terraform init", err)
