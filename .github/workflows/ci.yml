@@ -18,5 +18,3 @@ jobs:
       uses: securego/gosec@master
       with:
         args: ./...
-    - name: Build
-      run: ./ship.bash github.com/onelogin/onelogin-cli
