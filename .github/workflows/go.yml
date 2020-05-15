@@ -10,8 +10,6 @@ jobs:
       uses: actions/checkout@v2
     - name: Format
       run: go fmt ./...
-    - name: Build
-      run: go build ./...
     - name: Vet
       run: go vet ./...
     - name: Test
@@ -20,3 +18,5 @@ jobs:
       uses: securego/gosec@master
       with:
         args: ./...
+    - name: Build
+      run: ./ship.bash github.com/onelogin/onelogin-cli
