@@ -234,7 +234,7 @@ func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []tfimportab
 
 // loops over the resources to import and calls terraform import with the required resoruce arguments
 
-// #nosec
+// #nosec G204
 func importTFStateFromRemote(resourceDefinitions []tfimportables.ResourceDefinition) {
 	log.Println("Initializing Terraform with 'terraform init'...")
 	if err := exec.Command("terraform", "init").Run(); err != nil {
