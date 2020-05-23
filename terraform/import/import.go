@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/onelogin/onelogin-cli/terraform/importables"
-	"github.com/onelogin/onelogin-cli/utils"
+	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
 // ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
@@ -180,38 +180,31 @@ func convertTFStateToHCL(state State) []byte {
 // and appends the "line" to a bytes buffer.
 func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 	var out []byte
-
-	tp := reflect.TypeOf(input)
-	vl := reflect.ValueOf(input)
-
-	for i := 0; i < tp.NumField(); i++ {
+	b, _ := json.Marshal(input)
+	var m map[string]interface{}
+	json.Unmarshal(b, &m)
+	for k, v := range m {
 		line := make([]byte, indentLevel)
 		for i := 0; i < indentLevel; i++ {
 			line[i] = byte('\t')
 		}
-
-		field := vl.Field(i)
-		if !field.IsZero() {
-			switch field.Kind() {
-			case reflect.Ptr:
-				switch field.Elem().Kind() {
-				case reflect.String:
-					line = append(line, []byte(fmt.Sprintf("%s = \"%s\"\n", utils.ToSnakeCase(tp.Field(i).Name), field.Elem()))...)
-					out = append(out, line...)
-				case reflect.Bool, reflect.Int, reflect.Int32, reflect.Int64:
-					line = append(line, []byte(fmt.Sprintf("%s = %v\n", utils.ToSnakeCase(tp.Field(i).Name), field.Elem()))...)
-					out = append(out, line...)
-				default:
-					fmt.Println("Unable to Determine Type")
-				}
-			case reflect.Array, reflect.Slice:
-				for j := 0; j < field.Len(); j++ {
-					out = append(out, []byte(strings.ToLower(fmt.Sprintf("\n\t%s {\n", tp.Field(i).Name)))...)
-					out = append(out, convertToHCLByteSlice(field.Index(j).Interface(), indentLevel+1)...)
-					out = append(out, []byte("\t}\n")...)
-				}
+		switch reflect.TypeOf(v).Kind() {
+		case reflect.String:
+			line = append(line, []byte(fmt.Sprintf("%s = \"%s\"\n", utils.ToSnakeCase(k), v))...)
+			out = append(out, line...)
+		case reflect.Int, reflect.Int32, reflect.Float32, reflect.Float64, reflect.Bool:
+			line = append(line, []byte(fmt.Sprintf("%s = %v\n", utils.ToSnakeCase(k), v))...)
+			out = append(out, line...)
+		case reflect.Array, reflect.Slice:
+			for j := 0; j < len(v.([]interface{})); j++ {
+				out = append(out, []byte(strings.ToLower(fmt.Sprintf("\n\t%s {\n", k)))...)
+				out = append(out, convertToHCLByteSlice(v.([]interface{})[j], indentLevel+1)...)
+				out = append(out, []byte("\t}\n")...)
 			}
+		default:
+			fmt.Println("Unable to Determine Type")
 		}
+
 	}
 	return out
 }
