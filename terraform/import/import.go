@@ -180,9 +180,15 @@ func convertTFStateToHCL(state State) []byte {
 // and appends the "line" to a bytes buffer.
 func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 	var out []byte
-	b, _ := json.Marshal(input)
+	b, err := json.Marshal(input)
+	if err != nil {
+		log.Fatalln("unable to parse state to hcl")
+	}
 	var m map[string]interface{}
-	json.Unmarshal(b, &m)
+	err := json.Unmarshal(b, &m)
+	if err != nil {
+		log.Fatalln("unable to parse state to hcl")
+	}
 	for k, v := range m {
 		line := make([]byte, indentLevel)
 		for i := 0; i < indentLevel; i++ {
