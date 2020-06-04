@@ -187,15 +187,14 @@ func indent(level int) []byte {
 // recursively converts a chunk of data from it's struct representation to its HCL representation
 // and appends the "line" to a bytes buffer.
 func convertToHCLByteSlice(input interface{}, indentLevel int, builder *strings.Builder) {
-
 	b, err := json.Marshal(input)
 	if err != nil {
 		log.Fatalln("unable to parse state to hcl")
 	}
 	var m map[string]interface{}
 	json.Unmarshal(b, &m)
-	for k, v := range m {
 
+	for k, v := range m {
 		switch reflect.TypeOf(v).Kind() {
 		case reflect.String:
 			builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))
