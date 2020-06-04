@@ -3,38 +3,28 @@ package tfimportables
 import (
 	"fmt"
 	"log"
-	"net/http"
-	"os"
 
-	"github.com/onelogin/onelogin-cli/utils"
-	"github.com/onelogin/onelogin-go-sdk/pkg/client"
-	"github.com/onelogin/onelogin-go-sdk/pkg/models"
+	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
+	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
 type OneloginAppsImportable struct {
 	AppType string
+	Service AppQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
 func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
 	fmt.Println("Collecting Apps from OneLogin...")
-	oneloginClient, err := client.NewClient(&client.APIClientConfig{
-		Timeout:      5,
-		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
-		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
-		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
-	})
-	if err != nil {
-		log.Fatalln("Unable to connect to remote!", err)
-	}
-	allApps := i.GetAllApps(oneloginClient)
+
+	allApps := i.GetAllApps(i.Service)
 	resourceDefinitions := assembleResourceDefinitions(allApps)
 	return resourceDefinitions
 }
 
 // helper for packing apps into ResourceDefinitions
-func assembleResourceDefinitions(allApps []models.App) []ResourceDefinition {
+func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, app := range allApps {
 		resourceDefinition := ResourceDefinition{Provider: "onelogin"}
@@ -53,14 +43,7 @@ func assembleResourceDefinitions(allApps []models.App) []ResourceDefinition {
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginAppsImportable) GetAllApps(client *client.APIClient) []models.App {
-	var (
-		resp    *http.Response
-		apps    []models.App
-		allApps []models.App
-		err     error
-		next    string
-	)
+func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
 
 	appTypeQueryMap := map[string]string{
 		"onelogin_apps":      "",
@@ -69,24 +52,12 @@ func (i OneloginAppsImportable) GetAllApps(client *client.APIClient) []models.Ap
 	}
 	requestedAppType := appTypeQueryMap[i.AppType]
 
-	resp, apps, err = client.Services.AppsV2.GetApps(&models.AppsQuery{
+	appApps, err := appsService.Query(&apps.AppsQuery{
 		AuthMethod: requestedAppType,
 	})
-
-	for {
-		allApps = append(allApps, apps...)
-		next = resp.Header.Get("After-Cursor")
-		if next == "" || err != nil {
-			break
-		}
-		resp, apps, err = client.Services.AppsV2.GetApps(&models.AppsQuery{
-			AuthMethod: requestedAppType,
-			Cursor:     next,
-		})
-	}
 	if err != nil {
 		log.Fatal("error retrieving apps ", err)
 	}
 
-	return allApps
+	return appApps
 }
