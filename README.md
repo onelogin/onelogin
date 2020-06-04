@@ -7,7 +7,7 @@ The OneLogin CLI is your way to manage OneLogin resources such as Apps, Users, a
 
 ## Features
 `terraform-import <resource>`: Import your remote resources into a local Terraform State.
-This will:
+Running this command will do the following:
   1. Pull **all** your resources from the OneLogin API (remote)
   2. Establish a basic main.tf that represents all the apps in your account. Each app will get an empty Terraform resource "placeholder"
   3. Call `terraform import` for all the apps and update the `.tfstate`
@@ -17,8 +17,28 @@ This will:
 This assumes you have Terraform installed and the OneLogin provider side-loaded.
 The OneLogin Terraform provider is still in beta. If you'd like to use the beta [see this guide](https://github.com/onelogin/onelogin-terraform-provider#onelogin-terraform-provider-sdk)
 
+### API Credentials
+The CLI uses the OneLogin API and therefore you'll need admin access to a OneLogin account where you can create API credentials. 
+
+Create a set of API credentials with _manage all_ permission. 
+
+* Export these credentials to your environment and the provider will read them in from there
+```sh
+export ONELOGIN_CLIENT_ID=<your client id>
+export ONELOGIN_CLIENT_SECRET=<your client secret>
+export ONELOGIN_OAPI_URL=<the api url for your region>
+```
+
+### Example
+Import all OneLogin apps, create a main.tf file, and establish Terraform state.
+```sh
+onelogin-cli terraform-import onelogin_apps
+```
+
 ### Install - Requires Go
-`go install github.com/onelogin/onelogin-cli`
+```sh
+go install github.com/onelogin/onelogin-cli
+```
 
 ### Install From Source - Requires Go
 clone this repository
