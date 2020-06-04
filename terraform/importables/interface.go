@@ -8,7 +8,6 @@ type Importable interface {
 
 // ResourceDefinition represents the resource to be imported
 type ResourceDefinition struct {
-	Content  []byte
 	Provider string
 	Name     string
 	Type     string

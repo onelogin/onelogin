@@ -172,23 +172,22 @@ func TestConvertTFStateToHCL(t *testing.T) {
 func TestResourceBaseToHCL(t *testing.T) {
 	tests := map[string]struct {
 		InputInstance ResourceData
-		ExpectedOut   []byte
+		ExpectedOut   string
 	}{
 		"it creates a bytes buffer representing formatted HCL": {
 			InputInstance: ResourceData{
-				Name: oltypes.String("test"),
-				Provisioning: []apps.AppProvisioning{
-					apps.AppProvisioning{
-						Enabled: oltypes.Bool(true),
-					},
-				},
+				Name:         oltypes.String("test"),
+				Provisioning: []apps.AppProvisioning{apps.AppProvisioning{Enabled: oltypes.Bool(true)}},
+				Rules:        []Rule{Rule{Actions: []RuleActions{RuleActions{Value: []string{"member_of", "asdf"}}}}},
 			},
-			ExpectedOut: []byte("\tname = \"test\"\n\n\tprovisioning {\n\t\tenabled = true\n\t}\n"),
+			ExpectedOut: fmt.Sprintf("\tname = \"test\"\n\n\tprovisioning {\n\t\tenabled = true\n\t}\n\n\trules {\n\n\t\tactions {\n\t\t\tvalue = [\"member_of\",\"asdf\"]\n\t\t}\n\t}\n"),
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := convertToHCLByteSlice(test.InputInstance, 1)
+			var builder strings.Builder
+			convertToHCLByteSlice(test.InputInstance, 1, &builder)
+			actual := builder.String()
 			assert.Equal(t, test.ExpectedOut, actual)
 		})
 	}
@@ -205,20 +204,18 @@ func TestAppendDefinitionsToMainTF(t *testing.T) {
 			InputWriter: &MockFile{},
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
 				tfimportables.ResourceDefinition{
-					Content:  []byte{},
 					Name:     "test",
 					Type:     "test",
 					Provider: "test",
 				},
 				tfimportables.ResourceDefinition{
-					Content:  []byte{},
 					Name:     "test",
 					Type:     "test",
 					Provider: "test2",
 				},
 			},
 			InputProviderDefinitions: []string{"test", "test2"},
-			ExpectedOut:              []byte(fmt.Sprintf("provider test {\n\talias = \"test\"\n}\n\nprovider test2 {\n\talias = \"test2\"\n}\n\nresource test test {}\nresource test test {}\n")),
+			ExpectedOut:              []byte("provider test {\n\talias = \"test\"\n}\n\nprovider test2 {\n\talias = \"test2\"\n}\n\nresource test test {}\nresource test test {}\n"),
 		},
 	}
 	for name, test := range tests {
