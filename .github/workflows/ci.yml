@@ -13,8 +13,8 @@ jobs:
     - name: Vet
       run: go vet ./...
     - name: Test
-      run: go test ./...
-    - name: Secure
-      uses: securego/gosec@master
+      uses: cedrickring/golang-action@master
       with:
-        args: ./...
+        args: make test
+    - name: Secure
+      run: make secure

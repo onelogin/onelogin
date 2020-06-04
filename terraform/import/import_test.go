@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/onelogin/onelogin-cli/terraform/importables"
-	"github.com/onelogin/onelogin-go-sdk/pkg/models"
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
+	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -145,9 +145,10 @@ func TestConvertTFStateToHCL(t *testing.T) {
 						Instances: []ResourceInstance{
 							ResourceInstance{
 								Data: ResourceData{
-									Name: oltypes.String("test"),
-									Provisioning: []models.AppProvisioning{
-										models.AppProvisioning{
+									Name:        oltypes.String("test"),
+									ConnectorID: oltypes.Int32(22),
+									Provisioning: []apps.AppProvisioning{
+										apps.AppProvisioning{
 											Enabled: oltypes.Bool(true),
 										},
 									},
@@ -157,7 +158,7 @@ func TestConvertTFStateToHCL(t *testing.T) {
 					},
 				},
 			},
-			ExpectedOutput: []byte("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\tname = \"test\"\n\n\tprovisioning {\n\t\tenabled = true\n\t}\n}\n\n"),
+			ExpectedOutput: []byte("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\tconnector_id = 22\n\tname = \"test\"\n\n\tprovisioning {\n\t\tenabled = true\n\t}\n}\n\n"),
 		},
 	}
 	for name, test := range tests {
@@ -176,8 +177,8 @@ func TestResourceBaseToHCL(t *testing.T) {
 		"it creates a bytes buffer representing formatted HCL": {
 			InputInstance: ResourceData{
 				Name: oltypes.String("test"),
-				Provisioning: []models.AppProvisioning{
-					models.AppProvisioning{
+				Provisioning: []apps.AppProvisioning{
+					apps.AppProvisioning{
 						Enabled: oltypes.Bool(true),
 					},
 				},
