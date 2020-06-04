@@ -161,6 +161,8 @@ github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d/go.mod h1:o96d
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/onelogin/onelogin-go-sdk v0.1.8 h1:dttGfcrVImJMvEQqGgZY2N3x5JlWwvKorjOmi/Pdmp0=
 github.com/onelogin/onelogin-go-sdk v0.1.8/go.mod h1:16uGnxw0vtJZGwv/mm5ESNBTi4Eix7gqoRWzGrDndv0=
+github.com/onelogin/onelogin-go-sdk v0.2.5 h1:uU4Tgw6KukXUx0LUSE/tO79rdPqfumhAG8gzlhG0X6Q=
+github.com/onelogin/onelogin-go-sdk v0.2.5/go.mod h1:y/hManULXRfHb0Oy4QefoYPjOOdmHJQdOg+ul8gJu0o=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.0/go.mod h1:oUhWkIvk5aDxtKvDDuw8gItl8pKl42LzjC9KZE0HfGg=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
