@@ -176,6 +176,14 @@ func convertTFStateToHCL(state State) []byte {
 	return buffer
 }
 
+func indent(level int) []byte {
+	out := make([]byte, level)
+	for i := 0; i < level; i++ {
+		out[i] = byte('\t')
+	}
+	return out
+}
+
 // recursively converts a chunk of data from it's struct representation to its HCL representation
 // and appends the "line" to a bytes buffer.
 func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
@@ -185,28 +193,39 @@ func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
 		log.Fatalln("unable to parse state to hcl")
 	}
 	var m map[string]interface{}
-	err := json.Unmarshal(b, &m)
-	if err != nil {
-		log.Fatalln("unable to parse state to hcl")
-	}
+	json.Unmarshal(b, &m)
 	for k, v := range m {
-		line := make([]byte, indentLevel)
-		for i := 0; i < indentLevel; i++ {
-			line[i] = byte('\t')
-		}
+		line := []byte{}
+
 		switch reflect.TypeOf(v).Kind() {
 		case reflect.String:
-			line = append(line, []byte(fmt.Sprintf("%s = \"%s\"\n", utils.ToSnakeCase(k), v))...)
+			line = append(line, []byte(fmt.Sprintf("%s%s = \"%s\"\n", indent(indentLevel), utils.ToSnakeCase(k), v))...)
 			out = append(out, line...)
 		case reflect.Int, reflect.Int32, reflect.Float32, reflect.Float64, reflect.Bool:
-			line = append(line, []byte(fmt.Sprintf("%s = %v\n", utils.ToSnakeCase(k), v))...)
+			line = append(line, []byte(fmt.Sprintf("%s%s = %v\n", indent(indentLevel), utils.ToSnakeCase(k), v))...)
 			out = append(out, line...)
 		case reflect.Array, reflect.Slice:
-			for j := 0; j < len(v.([]interface{})); j++ {
-				out = append(out, []byte(strings.ToLower(fmt.Sprintf("\n\t%s {\n", k)))...)
-				out = append(out, convertToHCLByteSlice(v.([]interface{})[j], indentLevel+1)...)
-				out = append(out, []byte("\t}\n")...)
+			sl := v.([]interface{})
+			switch reflect.TypeOf(sl[0]).Kind() {
+			case reflect.Array, reflect.Slice, reflect.Map:
+				for j := 0; j < len(sl); j++ {
+					line = append(line, []byte(strings.ToLower(fmt.Sprintf("\n%s%s {\n", indent(indentLevel), utils.ToSnakeCase(k))))...)
+					line = append(line, convertToHCLByteSlice(sl[j], indentLevel+1)...)
+					line = append(line, []byte(fmt.Sprintf("%s}\n", indent(indentLevel)))...)
+				}
+				out = append(out, line...)
+			default:
+				line = append(line, []byte(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))...)
+				for j := 0; j < len(sl); j++ {
+					line = append(line, []byte(fmt.Sprintf("\"%s\"", sl[j]))...)
+					if j < len(sl)-1 {
+						line = append(line, []byte(",")...)
+					}
+				}
+				line = append(line, []byte("]\n")...)
+				out = append(out, line...)
 			}
+
 		default:
 			fmt.Println("Unable to Determine Type")
 		}

@@ -35,4 +35,20 @@ type ResourceData struct {
 	Provisioning       []apps.AppProvisioning  `json:"provisioning,omitempty"`
 	Parameters         []apps.AppParameters    `json:"parameters,omitempty"`
 	Configuration      []apps.AppConfiguration `json:"configuration,omitempty"`
+	Rules              []Rule                  `json:"rules,omitempty"`
+}
+
+// Define our own version of the app rules to refine what fields get written to main.tf plan
+type Rule struct {
+	Name       *string                  `json:"name,omitempty"`
+	Match      *string                  `json:"match,omitempty"`
+	Enabled    *bool                    `json:"enabled,omitempty"`
+	Conditions []apps.AppRuleConditions `json:"conditions,omitempty"`
+	Actions    []RuleActions            `json:"actions,omitempty"`
+}
+
+type RuleActions struct {
+	Action     *string  `json:"action,omitempty"`
+	Value      []string `json:"value,omitempty"`
+	Expression *string  `json:"expression,omitempty"`
 }

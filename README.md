@@ -1,5 +1,6 @@
 # OneLogin CLI
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/onelogin/onelogin-cli)](https://goreportcard.com/report/github.com/onelogin/onelogin-cli)
+<a href='https://github.com/jpoles1/gopherbadger' target='_blank'>![gopherbadger-tag-do-not-edit](https://img.shields.io/badge/Go%20Coverage-56%25-brightgreen.svg?longCache=true&style=flat)</a>
 ## Description
 
 The OneLogin CLI is your way to manage OneLogin resources such as Apps, Users, and Mappings via the Command Line.
