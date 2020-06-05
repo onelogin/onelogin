@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/onelogin/onelogin-cli/onelogin/terraform/importables"
+	"github.com/onelogin/onelogin/terraform/importables"
 	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 

@@ -16,7 +16,7 @@ limitations under the License.
 package main
 
 import (
-	"github.com/onelogin/onelogin-cli/onelogin/cmd"
+	"github.com/onelogin/onelogin/cmd"
 )
 
 func main() {

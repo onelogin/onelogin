@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/onelogin/onelogin-cli/onelogin/terraform/import"
-	"github.com/onelogin/onelogin-cli/onelogin/terraform/importables"
+	"github.com/onelogin/onelogin/terraform/import"
+	"github.com/onelogin/onelogin/terraform/importables"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 
 	"github.com/spf13/cobra"

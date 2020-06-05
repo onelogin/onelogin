@@ -1,4 +1,4 @@
-module github.com/onelogin/onelogin-cli/onelogin
+module github.com/onelogin/onelogin
 
 go 1.13
 
