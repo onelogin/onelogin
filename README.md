@@ -1,5 +1,5 @@
 # OneLogin CLI
-[![Go Report Card](https://goreportcard.com/badge/github.com/onelogin/onelogin-cli)](https://goreportcard.com/report/github.com/onelogin/onelogin-cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/onelogin/onelogin)](https://goreportcard.com/report/github.com/onelogin/onelogin)
 <a href='https://github.com/jpoles1/gopherbadger' target='_blank'>![gopherbadger-tag-do-not-edit](https://img.shields.io/badge/Go%20Coverage-56%25-brightgreen.svg?longCache=true&style=flat)</a>
 ## Description
 
@@ -18,9 +18,9 @@ This assumes you have Terraform installed and the OneLogin provider side-loaded.
 The OneLogin Terraform provider is still in beta. If you'd like to use the beta [see this guide](https://github.com/onelogin/onelogin-terraform-provider#onelogin-terraform-provider-sdk)
 
 ### API Credentials
-The CLI uses the OneLogin API and therefore you'll need admin access to a OneLogin account where you can create API credentials. 
+The CLI uses the OneLogin API and therefore you'll need admin access to a OneLogin account where you can create API credentials.
 
-Create a set of API credentials with _manage all_ permission. 
+Create a set of API credentials with _manage all_ permission.
 
 * Export these credentials to your environment and the provider will read them in from there
 ```sh
@@ -32,12 +32,12 @@ export ONELOGIN_OAPI_URL=<the api url for your region>
 ### Example
 Import all OneLogin apps, create a main.tf file, and establish Terraform state.
 ```sh
-onelogin-cli terraform-import onelogin_apps
+onelogin terraform-import onelogin_apps
 ```
 
 ### Install - Requires Go
 ```sh
-go install github.com/onelogin/onelogin-cli
+go install github.com/onelogin/onelogin
 ```
 
 ### Install From Source - Requires Go
@@ -57,7 +57,7 @@ binary for your system and add it to your /bin folder or run it directly per you
 
 ### Use
 from an empty directory, where you plan to manage your main.tf file run:
-`onelogin-cli terraform-import onelogin_apps`
+`onelogin terraform-import onelogin_apps`
 
 You'll be prompted to confirm the number of resources to import.
 This will capture the state of your remote in its entirety
