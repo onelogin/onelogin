@@ -153,6 +153,7 @@ github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn
 github.com/onelogin/onelogin-cli v0.0.5/go.mod h1:3aAH9IA+hrnx2TH1sA//8WLg7g2yk1X/nThmTu8PgI0=
 github.com/onelogin/onelogin-go-sdk v0.2.5 h1:uU4Tgw6KukXUx0LUSE/tO79rdPqfumhAG8gzlhG0X6Q=
 github.com/onelogin/onelogin-go-sdk v0.2.5/go.mod h1:y/hManULXRfHb0Oy4QefoYPjOOdmHJQdOg+ul8gJu0o=
+github.com/onelogin/onelogin-go-sdk v0.2.6/go.mod h1:y/hManULXRfHb0Oy4QefoYPjOOdmHJQdOg+ul8gJu0o=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.0/go.mod h1:oUhWkIvk5aDxtKvDDuw8gItl8pKl42LzjC9KZE0HfGg=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
