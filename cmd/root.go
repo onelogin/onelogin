@@ -29,7 +29,7 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "onelogin-cli",
+	Use:   "onelogin",
 	Short: "A CLI for managing IAM and Authentication resources",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
@@ -56,7 +56,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.onelogin-cli.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.onelogin.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -76,9 +76,9 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".onelogin-cli" (without extension).
+		// Search config in home directory with name ".onelogin" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".onelogin-cli")
+		viper.SetConfigName(".onelogin")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

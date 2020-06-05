@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/onelogin/onelogin-cli/terraform/importables"
+	"github.com/onelogin/onelogin/terraform/importables"
 	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
@@ -154,7 +154,7 @@ func collectTerraformDefinitionsFromFile(f io.Reader) map[string]map[string]int 
 // takes the tfstate representations formats them as HCL and writes them to a bytes buffer
 // so it can be flushed into main.tf
 func convertTFStateToHCL(state State) []byte {
-	var buffer []byte
+	var builder strings.Builder
 	knownProviders := map[string]int{}
 
 	log.Println("Assembling main.tf...")
@@ -163,17 +163,17 @@ func convertTFStateToHCL(state State) []byte {
 		providerDefinition := strings.Replace(resource.Provider, "provider.", "", 1)
 		if knownProviders[providerDefinition] == 0 {
 			knownProviders[providerDefinition]++
-			buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", providerDefinition, providerDefinition))...)
+			builder.WriteString(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", providerDefinition, providerDefinition))
 		}
 		for _, instance := range resource.Instances {
-			resource.Content = append(resource.Content, []byte(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))...)
-			resource.Content = append(resource.Content, []byte(fmt.Sprintf("\tprovider = %s\n", providerDefinition))...)
-			resource.Content = append(resource.Content, convertToHCLByteSlice(instance.Data, 1)...)
-			resource.Content = append(resource.Content, []byte("}\n\n")...)
+			builder.WriteString(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))
+			builder.WriteString(fmt.Sprintf("\tprovider = %s\n", providerDefinition))
+			convertToHCLByteSlice(instance.Data, 1, &builder)
+			builder.WriteString("}\n\n")
 		}
-		buffer = append(buffer, resource.Content...)
+		builder.WriteString(string(resource.Content))
 	}
-	return buffer
+	return []byte(builder.String())
 }
 
 func indent(level int) []byte {
@@ -186,66 +186,56 @@ func indent(level int) []byte {
 
 // recursively converts a chunk of data from it's struct representation to its HCL representation
 // and appends the "line" to a bytes buffer.
-func convertToHCLByteSlice(input interface{}, indentLevel int) []byte {
-	var out []byte
+func convertToHCLByteSlice(input interface{}, indentLevel int, builder *strings.Builder) {
 	b, err := json.Marshal(input)
 	if err != nil {
 		log.Fatalln("unable to parse state to hcl")
 	}
 	var m map[string]interface{}
 	json.Unmarshal(b, &m)
-	for k, v := range m {
-		line := []byte{}
 
+	for k, v := range m {
 		switch reflect.TypeOf(v).Kind() {
 		case reflect.String:
-			line = append(line, []byte(fmt.Sprintf("%s%s = \"%s\"\n", indent(indentLevel), utils.ToSnakeCase(k), v))...)
-			out = append(out, line...)
+			builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))
 		case reflect.Int, reflect.Int32, reflect.Float32, reflect.Float64, reflect.Bool:
-			line = append(line, []byte(fmt.Sprintf("%s%s = %v\n", indent(indentLevel), utils.ToSnakeCase(k), v))...)
-			out = append(out, line...)
+			builder.WriteString(fmt.Sprintf("%s%s = %v\n", indent(indentLevel), utils.ToSnakeCase(k), v))
 		case reflect.Array, reflect.Slice:
 			sl := v.([]interface{})
 			switch reflect.TypeOf(sl[0]).Kind() {
 			case reflect.Array, reflect.Slice, reflect.Map:
 				for j := 0; j < len(sl); j++ {
-					line = append(line, []byte(strings.ToLower(fmt.Sprintf("\n%s%s {\n", indent(indentLevel), utils.ToSnakeCase(k))))...)
-					line = append(line, convertToHCLByteSlice(sl[j], indentLevel+1)...)
-					line = append(line, []byte(fmt.Sprintf("%s}\n", indent(indentLevel)))...)
+					builder.WriteString(strings.ToLower(fmt.Sprintf("\n%s%s {\n", indent(indentLevel), utils.ToSnakeCase(k))))
+					convertToHCLByteSlice(sl[j], indentLevel+1, builder)
+					builder.WriteString(fmt.Sprintf("%s}\n", indent(indentLevel)))
 				}
-				out = append(out, line...)
 			default:
-				line = append(line, []byte(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))...)
+				builder.WriteString(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))
 				for j := 0; j < len(sl); j++ {
-					line = append(line, []byte(fmt.Sprintf("\"%s\"", sl[j]))...)
+					builder.WriteString(fmt.Sprintf("%q", sl[j]))
 					if j < len(sl)-1 {
-						line = append(line, []byte(",")...)
+						builder.WriteString(",")
 					}
 				}
-				line = append(line, []byte("]\n")...)
-				out = append(out, line...)
+				builder.WriteString("]\n")
 			}
 
 		default:
 			fmt.Println("Unable to Determine Type")
 		}
-
 	}
-	return out
 }
 
 // in preparation for terraform import, appends empty resource definitions to the existing main.tf file
 func appendDefinitionsToMainTF(f io.ReadWriter, resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string) {
-	var buffer []byte
+	var builder strings.Builder
 	for _, newProvider := range providerDefinitions {
-		buffer = append(buffer, []byte(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))...)
+		builder.WriteString(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))
 	}
-
 	for _, resourceDefinition := range resourceDefinitions {
-		resourceDefinition.Content = append(resourceDefinition.Content, []byte(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))...)
-		buffer = append(buffer, resourceDefinition.Content...)
+		builder.WriteString(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))
 	}
-	if _, err := f.Write(buffer); err != nil {
+	if _, err := f.Write([]byte(builder.String())); err != nil {
 		log.Fatal("Problem creating import file", err)
 	}
 }
