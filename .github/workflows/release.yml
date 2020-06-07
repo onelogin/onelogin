@@ -28,7 +28,7 @@ jobs:
           draft: false
           prerelease: false
       - name: Upload Darwin-amd64 Asset
-        id: upload-release-asset
+        id: upload-Darwin-amd64-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,7 +38,7 @@ jobs:
           asset_name: dawrin-amd64
           asset_content_type: binary/octet-stream
       - name: Upload Linux-amd64 Asset
-        id: upload-release-asset
+        id: upload-Linux-amd64-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,7 +48,7 @@ jobs:
           asset_name: linux-amd64
           asset_content_type: binary/octet-stream
       - name: Upload Windows-amd64 Asset
-        id: upload-release-asset
+        id: upload-Windows-amd64-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +58,7 @@ jobs:
           asset_name: windows-amd64
           asset_content_type: binary/octet-stream
       - name: Upload Windows-386 Asset
-        id: upload-release-asset
+        id: upload-Windows-386-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,7 +68,7 @@ jobs:
           asset_name: windows-386
           asset_content_type: binary/octet-stream
       - name: Upload Linux-386 Asset
-        id: upload-release-asset
+        id: upload-Linux-386-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
