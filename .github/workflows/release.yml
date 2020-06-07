@@ -24,4 +24,4 @@ jobs:
           ALLOW_EMPTY_CHANGELOG: "true"
           ALLOW_TAG_PREFIX: "true"
       - name: Build
-        run: ./ship.bash github.com/onelogin/onelogin-cli
+        run: ./ship.bash github.com/onelogin/onelogin
