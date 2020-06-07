@@ -16,7 +16,7 @@ jobs:
         with:
           go-version: 1.14
       - name: Build
-        run: ./ship.bash github.com/onelogin/onelogin
+        run: ./ship.sh github.com/onelogin/onelogin
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -33,7 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build
           asset_name: onelogin-darwin-amd64
           asset_content_type: binary/octet-stream
