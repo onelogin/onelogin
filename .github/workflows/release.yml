@@ -35,7 +35,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/darwin-amd64.tar.gz
-          asset_name: dawrin-amd64
+          asset_name: dawrin-amd64.tar.gz
           asset_content_type: application/x-gzip
       - name: Upload Linux-amd64 Asset
         id: upload-Linux-amd64-asset
@@ -45,7 +45,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/linux-amd64.tar.gz
-          asset_name: linux-amd64
+          asset_name: linux-amd64.tar.gz
           asset_content_type: application/x-gzip
       - name: Upload Windows-amd64 Asset
         id: upload-Windows-amd64-asset
@@ -55,7 +55,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/windows-amd64.tar.gz
-          asset_name: windows-amd64
+          asset_name: windows-amd64.tar.gz
           asset_content_type: application/x-gzip
       - name: Upload Windows-386 Asset
         id: upload-Windows-386-asset
@@ -65,7 +65,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/windows-386.tar.gz
-          asset_name: windows-386
+          asset_name: windows-386.tar.gz
           asset_content_type: application/x-gzip
       - name: Upload Linux-386 Asset
         id: upload-Linux-386-asset
@@ -75,5 +75,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/linux-386.tar.gz
-          asset_name: linux-386
+          asset_name: linux-386.tar.gz
           asset_content_type: application/x-gzip
