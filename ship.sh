@@ -6,7 +6,7 @@ if [[ -z "$package" ]]; then
   exit 1
 fi
 package_split=(${package//\// })
-package_name=${package_split[${#package_split[@]}-1]]}
+package_name=${package_split[${#package_split[@]}-1]}
 
 platforms=("windows/amd64" "windows/386" "darwin/amd64" "linux/amd64" "linux/386")
 
