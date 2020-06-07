@@ -26,5 +26,3 @@ do
         exit 1
     fi
 done
-
-zip -r ./build.zip ./build/*

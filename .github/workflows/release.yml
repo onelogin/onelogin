@@ -34,6 +34,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build.zip
+          asset_path: ./build/onelogin-darwin-amd64
           asset_name: builds
-          asset_content_type: application/zip
+          asset_content_type: binary/octet-stream
