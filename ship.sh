@@ -28,6 +28,11 @@ do
 
     cp './README.md' './build/'$GOOS'-'$GOARCH'/README.md'
     cp './LICENSE' './build/'$GOOS'-'$GOARCH'/LICENSE'
-    tar -czvf 'build/'$GOOS'-'$GOARCH'.tar.gz' 'build/'$GOOS'-'$GOARCH
+
+    if [ $GOOS = "windows" ]; then
+      zip -r 'build/'$GOOS'-'$GOARCH'.zip' 'build/'$GOOS'-'$GOARCH
+    else
+      tar -czvf 'build/'$GOOS'-'$GOARCH'.tar.gz' 'build/'$GOOS'-'$GOARCH
+    fi
     rm -rf 'build/'$GOOS'-'$GOARCH
 done

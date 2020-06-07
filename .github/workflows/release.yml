@@ -54,9 +54,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/windows-amd64.tar.gz
-          asset_name: windows-amd64.tar.gz
-          asset_content_type: application/x-gzip
+          asset_path: ./build/windows-amd64.zip
+          asset_name: windows-amd64.zip
+          asset_content_type: application/zip
       - name: Upload Windows-386 Asset
         id: upload-Windows-386-asset
         uses: actions/upload-release-asset@v1
@@ -64,9 +64,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/windows-386.tar.gz
-          asset_name: windows-386.tar.gz
-          asset_content_type: application/x-gzip
+          asset_path: ./build/windows-386.zip
+          asset_name: windows-386.zip
+          asset_content_type: application/zip
       - name: Upload Linux-386 Asset
         id: upload-Linux-386-asset
         uses: actions/upload-release-asset@v1
