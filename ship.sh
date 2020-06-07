@@ -15,7 +15,7 @@ do
     platform_split=(${platform//\// })
     GOOS=${platform_split[0]}
     GOARCH=${platform_split[1]}
-    output_name='build/'$package_name'-'$GOOS'-'$GOARCH
+    output_name='build/'$GOOS'-'$GOARCH'/'$package_name'-'$GOOS'-'$GOARCH
     if [ $GOOS = "windows" ]; then
         output_name+='.exe'
     fi
@@ -25,4 +25,9 @@ do
         echo 'An error has occurred! Aborting the script execution...'
         exit 1
     fi
+
+    cp './README.md' './build/'$GOOS'-'$GOARCH'/README.md'
+    cp './LICENSE' './build/'$GOOS'-'$GOARCH'/LICENSE'
+    tar -czvf 'build/'$GOOS'-'$GOARCH'.tar.gz' 'build/'$GOOS'-'$GOARCH
+    rm -rf 'build/'$GOOS'-'$GOARCH
 done
