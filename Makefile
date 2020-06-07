@@ -7,4 +7,4 @@ secure:
 	./bin/gosec -exclude=G104 ./...
 
 ship:
-	./ship.sh github.com/onelogin/onelogin
+	bash ship.sh github.com/onelogin/onelogin
