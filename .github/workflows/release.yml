@@ -27,7 +27,7 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
+      - name: Upload Darwin-amd64 Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
@@ -36,4 +36,44 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/onelogin-darwin-amd64
           asset_name: dawrin-amd64
+          asset_content_type: binary/octet-stream
+      - name: Upload Linux-amd64 Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/onelogin-linux-amd64
+          asset_name: linux-amd64
+          asset_content_type: binary/octet-stream
+      - name: Upload Windows-amd64 Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/onelogin-windows-amd64.exe
+          asset_name: windows-amd64
+          asset_content_type: binary/octet-stream
+      - name: Upload Windows-386 Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/onelogin-windows-386.exe
+          asset_name: windows-386
+          asset_content_type: binary/octet-stream
+      - name: Upload Linux-386 Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/onelogin-linux-386
+          asset_name: linux-386
           asset_content_type: binary/octet-stream
