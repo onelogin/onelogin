@@ -63,26 +63,3 @@ func TestGetAllApps(t *testing.T) {
 		})
 	}
 }
-
-func ImportFromRemote(t *testing.T) {
-	tests := map[string]struct {
-		Importable OneloginAppsImportable
-		Service    AppQuerier
-		Expected   []ResourceDefinition
-	}{
-		"": {
-			Importable: OneloginAppsImportable{Service: MockService{}, AppType: "onelogin_saml_apps"},
-			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_oidc_apps", Name: "test1-1"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_saml_apps", Name: "test2-2"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_apps", Name: "test3-3"},
-			},
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := test.Importable.ImportFromRemote()
-			assert.Equal(t, test.Expected, actual)
-		})
-	}
-}
