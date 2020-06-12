@@ -1,6 +1,9 @@
 package tfimportables
 
-import "github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
+import (
+	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
+	"github.com/onelogin/onelogin-go-sdk/pkg/services/user_mappings"
+)
 
 type Importable interface {
 	ImportFromRemote() []ResourceDefinition
@@ -15,4 +18,8 @@ type ResourceDefinition struct {
 
 type AppQuerier interface {
 	Query(query *apps.AppsQuery) ([]apps.App, error)
+}
+
+type UserMappingQuerier interface {
+	Query(query *usermappings.UserMappingsQuery) ([]usermappings.UserMapping, error)
 }

@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin/terraform/import"
 	"github.com/onelogin/onelogin/terraform/importables"
-	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 
 	"github.com/spf13/cobra"
 )
@@ -21,9 +21,10 @@ func init() {
 		create new .tfstate and .tf files so you can
 		begin managing existing resources with Terraform.
 		Available Imports:
-			onelogin_apps      => all apps
-			onelogin_saml_apps => SAML apps only
-			onelogin_oidc_apps => OIDC apps only`,
+			onelogin_apps          => all apps
+			onelogin_saml_apps     => SAML apps only
+			onelogin_oidc_apps     => OIDC apps only
+			onelogin_user_mappings => user mappings`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				log.Fatalf("Must specify resource to import!")
@@ -47,9 +48,10 @@ func terraformImport(cmd *cobra.Command, args []string) {
 	}
 
 	importables := map[string]tfimportables.Importable{
-		"onelogin_apps":      tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2},
-		"onelogin_saml_apps": tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_saml_apps"},
-		"onelogin_oidc_apps": tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_oidc_apps"},
+		"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2},
+		"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_saml_apps"},
+		"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_oidc_apps"},
+		"onelogin_user_mappings": tfimportables.OneloginUserMappingsImportable{Service: oneloginClient.Services.UserMappingsV2},
 	}
 
 	importable, ok := importables[strings.ToLower(args[0])]
