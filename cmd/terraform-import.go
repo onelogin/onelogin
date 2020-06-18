@@ -66,5 +66,4 @@ func terraformImport(cmd *cobra.Command, args []string) {
 	}
 
 	tfimport.ImportTFStateFromRemote(importable)
-	tfimport.UpdateMainTFFromState()
 }

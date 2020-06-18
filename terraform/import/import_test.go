@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/onelogin/onelogin/terraform/importables"
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
+	"github.com/onelogin/onelogin/terraform/importables"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,22 +30,22 @@ func (m *MockFile) Read(p []byte) (int, error) {
 
 func TestFilterExistingDefinitions(t *testing.T) {
 	tests := map[string]struct {
-		InputFileCounts             map[string]map[string]int
+		InputReadWriter             io.Reader
 		InputResourceDefinitions    []tfimportables.ResourceDefinition
 		ExpectedResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedProviders           []string
 	}{
 		"it yields lists of resource definitions and providers not already defined in main.tf": {
-			InputFileCounts: map[string]map[string]int{
-				"resource": map[string]int{
-					"onelogin_apps.defined_in_main.tf_already": 1,
-				},
-				"provider": map[string]int{
-					"onelogin": 1,
-				},
-			},
+			InputReadWriter: strings.NewReader(`
+				resource onelogin_apps defined_in_main_already {
+					name = defined_in_main_already
+				}
+				provider onelogin {
+					alias "onelogin"
+				}
+			`),
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "defined_in_main.tf_already", Type: "onelogin_apps"},
+				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "defined_in_main_already", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "new_resource", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "test", Type: "onelogin_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "okra", Name: "test", Type: "okra_saml_apps"},
@@ -60,44 +60,9 @@ func TestFilterExistingDefinitions(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualResourceDefinitions, actualProviderDefinitions := filterExistingDefinitions(test.InputFileCounts, test.InputResourceDefinitions)
+			actualResourceDefinitions, actualProviderDefinitions := filterExistingDefinitions(test.InputReadWriter, test.InputResourceDefinitions)
 			assert.Equal(t, test.ExpectedResourceDefinitions, actualResourceDefinitions)
 			assert.Equal(t, test.ExpectedProviders, actualProviderDefinitions)
-		})
-	}
-}
-
-func TestCollectTerraformDefinitionsFromFile(t *testing.T) {
-	tests := map[string]struct {
-		InputReadWriter     io.Reader
-		ExpectedDefinitions map[string]map[string]int
-	}{
-		"it finds resource and provider definitions in main.tf": {
-			InputReadWriter: strings.NewReader(`
-				provider onelogin {
-					alias = "onelogin"
-				}
-				resource onelogin_apps test {
-					name = "should not be here"
-				}
-				resource onelogin_apps test {
-					name = "this is not proper HCL and will get counted again"
-				}
-			`),
-			ExpectedDefinitions: map[string]map[string]int{
-				"resource": map[string]int{
-					"onelogin_apps.test": 2,
-				},
-				"provider": map[string]int{
-					"onelogin": 1,
-				},
-			},
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := collectTerraformDefinitionsFromFile(test.InputReadWriter)
-			assert.Equal(t, test.ExpectedDefinitions, actual)
 		})
 	}
 }
@@ -158,7 +123,7 @@ func TestAppendDefinitionsToMainTF(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actual := make([]byte, len(test.ExpectedOut))
-			appendDefinitionsToMainTF(test.InputWriter, test.InputResourceDefinitions, test.InputProviderDefinitions)
+			actual = createHCLDefinitionsBuffer(test.InputResourceDefinitions, test.InputProviderDefinitions)
 			test.InputWriter.Read(actual)
 			assert.Equal(t, test.ExpectedOut, actual)
 		})
