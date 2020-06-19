@@ -55,8 +55,8 @@ func ImportTFStateFromRemote(importable tfimportables.Importable) {
 		log.Fatal("Problem creating import file", err)
 	}
 
-	// #nosec G204
 	log.Println("Initializing Terraform with 'terraform init'...")
+	// #nosec G204
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		log.Fatal("Problem executing terraform init", err)
 	}
@@ -65,6 +65,7 @@ func ImportTFStateFromRemote(importable tfimportables.Importable) {
 		arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
 		pos := strings.Index(arg1, "-")
 		id := arg1[pos+1 : len(arg1)]
+		// #nosec G204
 		cmd := exec.Command("terraform", "import", arg1, id)
 		log.Printf("Importing resource %d", i+1)
 		if err := cmd.Run(); err != nil {
