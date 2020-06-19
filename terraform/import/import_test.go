@@ -2,14 +2,11 @@ package tfimport
 
 import (
 	"fmt"
+	"github.com/onelogin/onelogin/terraform/importables"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
-
-	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
-	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
-	"github.com/onelogin/onelogin/terraform/importables"
-	"github.com/stretchr/testify/assert"
 )
 
 type MockFile struct {
@@ -81,11 +78,11 @@ func TestConvertTFStateToHCL(t *testing.T) {
 						Provider: "provider.onelogin",
 						Instances: []ResourceInstance{
 							ResourceInstance{
-								Data: ResourceData{
-									Name:         oltypes.String("test"),
-									ConnectorID:  oltypes.Int32(22),
-									Rules:        []Rule{Rule{Actions: []RuleActions{RuleActions{Value: []string{"member_of", "asdf"}}}}},
-									Provisioning: []apps.AppProvisioning{apps.AppProvisioning{Enabled: oltypes.Bool(true)}},
+								Data: map[string]interface{}{
+									"name":         "test",
+									"connector_id": 22,
+									"rules":        []map[string]interface{}{{"actions": []map[string]interface{}{{"value": []string{"member_of", "asdf"}}}}},
+									"provisioning": []map[string]bool{{"enabled": true}},
 								},
 							},
 						},
