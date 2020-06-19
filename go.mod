@@ -9,5 +9,3 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.4.0
 )
-
-replace github.com/onelogin/onelogin-go-sdk => /Users/dominickcaponi/go/src/github.com/onelogin/onelogin-go-sdk
