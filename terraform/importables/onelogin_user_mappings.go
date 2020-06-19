@@ -43,3 +43,27 @@ func (i OneloginUserMappingsImportable) GetAll(userMappingsService UserMappingQu
 
 	return um
 }
+
+// the underlying data that represents the resource from the remote in terraform.
+// add fields here so they can be unmarshalled from tfstate json into the struct and handled by the importer
+type UserMappingData struct {
+	Name       *string                     `json:"name,omitempty"`
+	Match      *string                     `json:"match,omitempty"`
+	Position   *int32                      `json:"position,omitempty"`
+	Enabled    *bool                       `json:"enabled,omitempty"`
+	Conditions []UserMappingConditionsData `json:"conditions,omitempty"` // we managed to get lucky thus far but if multiple resources have the same field and theyre different types this will be a problem
+	Actions    []UserMappingActionsData    `json:"actions,omitempty"`
+}
+
+// UserMappingConditions is the contract for User Mapping Conditions.
+type UserMappingConditionsData struct {
+	Source   *string `json:"source,omitempty"`
+	Operator *string `json:"operator,omitempty"`
+	Value    *string `json:"value,omitempty"`
+}
+
+// UserMappingActions is the contract for User Mapping Actions.
+type UserMappingActionsData struct {
+	Action *string  `json:"action,omitempty"`
+	Value  []string `json:"value,omitempty"`
+}
