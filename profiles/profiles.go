@@ -153,8 +153,13 @@ func (p ProfileRepository) persist(profiles map[string]*Profile) {
 	}
 	updatedProfiles, _ := json.Marshal(data)
 	p.Source.(*os.File).Truncate(0)
-	defer p.Source.(*os.File).Close()
 	if _, err := p.Source.(*os.File).WriteAt(updatedProfiles, 0); err != nil {
+		if err = p.Source.(*os.File).Close(); err != nil {
+			log.Fatalln("Unable write profile", err)
+		}
 		log.Fatalln("Unable to persist", err)
+	}
+	if err := p.Source.(*os.File).Close(); err != nil {
+		log.Fatalln("Unable write profile", err)
 	}
 }

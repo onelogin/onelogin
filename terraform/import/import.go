@@ -23,7 +23,6 @@ import (
 func ImportTFStateFromRemote(importable tfimportables.Importable) {
 	p := filepath.Join("main.tf")
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
-	defer f.Close()
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
@@ -59,6 +58,9 @@ func ImportTFStateFromRemote(importable tfimportables.Importable) {
 	log.Println("Initializing Terraform with 'terraform init'...")
 	// #nosec G204
 	if err := exec.Command("terraform", "init").Run(); err != nil {
+		if err := f.Close(); err != nil {
+			log.Fatal("Problem writing to main.tf", err)
+		}
 		log.Fatal("Problem executing terraform init", err)
 	}
 
@@ -76,6 +78,9 @@ func ImportTFStateFromRemote(importable tfimportables.Importable) {
 
 	state, err := collectState() // grab the state from tfstate
 	if err != nil {
+		if err := f.Close(); err != nil {
+			log.Fatal("Problem writing to main.tf", err)
+		}
 		log.Fatalln("Unable to collect state from tfstate")
 	}
 	buffer := convertTFStateToHCL(state)
