@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE dominick.caponi@onelogin.com
+Copyright © 2020 OneLogin Inc dominick.caponi@onelogin.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

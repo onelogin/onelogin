@@ -23,6 +23,7 @@ import (
 func ImportTFStateFromRemote(importable tfimportables.Importable) {
 	p := filepath.Join("main.tf")
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+	defer f.Close()
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}

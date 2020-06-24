@@ -61,7 +61,6 @@ func terraformImport(cmd *cobra.Command, args []string) {
 		for k := range importables {
 			availableImportables = append(availableImportables, fmt.Sprintf("%s", k))
 		}
-		log.Println("Must specify resource to import!")
 		log.Fatalf("Available resources: %s", availableImportables)
 	}
 
