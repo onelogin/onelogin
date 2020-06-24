@@ -30,7 +30,7 @@ func New() ProfileRepository {
 		log.Fatalln("Unable to find user home directory from $HOME or USERPROFILE environment variables")
 	}
 	p := filepath.Join(homeDir, ".onelogin")
-	os.Mkdir(p, 0755)
+	os.Mkdir(p, 0750)
 	p = filepath.Join(p, "profiles.json")
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
