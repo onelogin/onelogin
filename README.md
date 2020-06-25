@@ -13,6 +13,18 @@ Running this command will do the following:
   3. Call `terraform import` for all the apps and update the `.tfstate`
   4. Using .tfstate, update main.tf to fill in the editable fields of the resource
 
+### Install - Requires Go
+Clone this repo then install using go.
+
+```sh
+go install github.com/onelogin/onelogin
+```
+
+### Install From Source - Requires Go
+clone this repository
+from inside the repository `go build ./...` to create a runnable binary
+from inside the repository `go install .` to add a the runnable CLI to your GOPATH /bin directory
+
 ## Usage
 This assumes you have Terraform installed and the OneLogin provider side-loaded.
 The OneLogin Terraform provider is still in beta. If you'd like to use the beta [see this guide](https://github.com/onelogin/onelogin-terraform-provider#onelogin-terraform-provider-sdk)
@@ -34,16 +46,6 @@ Import all OneLogin apps, create a main.tf file, and establish Terraform state.
 ```sh
 onelogin terraform-import onelogin_apps
 ```
-
-### Install - Requires Go
-```sh
-go install github.com/onelogin/onelogin
-```
-
-### Install From Source - Requires Go
-clone this repository
-from inside the repository `go build ./...` to create a runnable binary
-from inside the repository `go install .` to add a the runnable CLI to your GOPATH /bin directory
 
 ### Binaries
 There are binaries available for the major platforms in this project's /build directory. Download the
