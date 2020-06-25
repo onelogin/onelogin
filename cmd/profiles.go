@@ -5,6 +5,8 @@ import (
 	"github.com/onelogin/onelogin/profiles"
 	"log"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"encoding/json"
 )
@@ -38,13 +40,25 @@ func init() {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			action := args[0]
-			profileRepo := profiles.New()
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalln("Unable to find user home directory from $HOME or USERPROFILE environment variables")
+			}
+			p := filepath.Join(homeDir, ".onelogin")
+			os.Mkdir(p, 0750)
+			p = filepath.Join(p, "profiles.json")
+			f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+			if err != nil {
+				log.Fatalln("Unable to create profiles file")
+			}
+			profileRepo := profiles.FileRepository{StorageMedia: f}
+			profileService := profiles.New(profileRepo, os.Stdin)
 			if f, ok := legalActions[action].(func(s string, pr profiles.ProfileRepository)); ok {
 				if len(args) < 2 {
-					f("", profileRepo)
+					f("", profileService)
 				} else {
 					profileName := args[1]
-					f(profileName, profileRepo)
+					f(profileName, profileService)
 				}
 			} else {
 				log.Fatalf("Unexpected Error!")
