@@ -12,7 +12,18 @@ import (
 )
 
 func init() {
-	legalActions := map[string]interface{}{"add": add, "list": list, "use": use, "edit": edit, "remove": remove}
+	legalActions := map[string]interface{}{
+		"add":     add,
+		"list":    list,
+		"ls":      list,
+		"use":     use,
+		"edit":    edit,
+		"update":  edit,
+		"remove":  remove,
+		"delete":  remove,
+		"which":   current,
+		"current": current,
+	}
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "profiles",
 		Short: "Manage account settings for the CLI",
@@ -20,11 +31,12 @@ func init() {
 		and facilitates creating, changing, deleting, indexing, and using known configurations.
 		You are of course, free to go and edit the profiles file yourself and use this as a way to quickly switch out your environment.
 		Available Actions:
-			use    [name - required] => exports selected account information to environment
-			edit   [name - required] => edits selected account information
-			remove [name - required] => removes selected account
-			add    [name - required] => adds account to manage
-			list   [name - optional] => lists managed accounts that can be used. if name given, lists information about that profile`,
+			use             [name - required] => exports selected account information to environment
+			edit (update)   [name - required] => edits selected account information
+			remove (delete) [name - required] => removes selected account
+			add             [name - required] => adds account to manage
+			list (ls)       [name - optional] => lists managed accounts that can be used. if name given, lists information about that profile
+			which (current) []                => returns current active profile`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				log.Fatalf("Must specify action to perform!")
@@ -33,7 +45,7 @@ func init() {
 			if legalActions[action] == nil {
 				log.Fatalf("Illegal Action!")
 			}
-			if (action == "add" || action == "use" || action == "edit" || action == "remove") && len(args) < 2 {
+			if (action == "add" || action == "use" || action == "edit" || action == "update" || action == "remove" || action == "delete") && len(args) < 2 {
 				log.Fatalf("Profile Name is required for this action!")
 			}
 			return nil
@@ -57,6 +69,8 @@ func init() {
 					f(profileName, profileService)
 				}
 				configFile.Close()
+			} else if f, ok := legalActions[action].(func(pr profiles.ProfileService)); ok {
+				f(profileService)
 			} else {
 				configFile.Close()
 				log.Fatalf("Unexpected Error!")
@@ -67,6 +81,7 @@ func init() {
 
 func add(name string, pr profiles.ProfileService) {
 	pr.Create(name)
+	fmt.Println("Successfully created:", name)
 }
 
 func list(name string, pr profiles.ProfileService) {
@@ -89,14 +104,29 @@ func list(name string, pr profiles.ProfileService) {
 	fmt.Println(string(printout))
 }
 
+func current(pr profiles.ProfileService) {
+	profiles := pr.Index()
+	var active string
+	for name, p := range profiles {
+		if (*p).Active == true {
+			active = name
+			break
+		}
+	}
+	fmt.Println("Current Profile:", active)
+}
+
 func use(name string, pr profiles.ProfileService) {
 	pr.Activate(name)
+	fmt.Println("Active profile:", name)
 }
 
 func edit(name string, pr profiles.ProfileService) {
 	pr.Update(name)
+	fmt.Println("Successfully updated:", name)
 }
 
 func remove(name string, pr profiles.ProfileService) {
 	pr.Remove(name)
+	fmt.Println("Successfully removed:", name)
 }
