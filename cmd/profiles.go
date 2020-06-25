@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/onelogin/onelogin/profiles"
-	"log"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 	"encoding/json"
+	"fmt"
+	"github.com/onelogin/onelogin/profiles"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+	"strings"
 )
 
 func init() {
@@ -33,27 +33,23 @@ func init() {
 			if legalActions[action] == nil {
 				log.Fatalf("Illegal Action!")
 			}
-			if (action == "add"  || action == "use" || action == "edit" || action == "remove") && len(args) < 2 {
+			if (action == "add" || action == "use" || action == "edit" || action == "remove") && len(args) < 2 {
 				log.Fatalf("Profile Name is required for this action!")
 			}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			action := args[0]
-			homeDir, err := os.UserHomeDir()
+			profileConfig := viper.ConfigFileUsed()
+			f, err := os.OpenFile(profileConfig, os.O_RDWR, 0600)
 			if err != nil {
-				log.Fatalln("Unable to find user home directory from $HOME or USERPROFILE environment variables")
+				log.Fatalln("Unable to open profiles file")
 			}
-			p := filepath.Join(homeDir, ".onelogin")
-			os.Mkdir(p, 0750)
-			p = filepath.Join(p, "profiles.json")
-			f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
-			if err != nil {
-				log.Fatalln("Unable to create profiles file")
+			profileService := profiles.ProfileService{
+				Repository:  profiles.FileRepository{StorageMedia: f},
+				InputReader: os.Stdin,
 			}
-			profileRepo := profiles.FileRepository{StorageMedia: f}
-			profileService := profiles.New(profileRepo, os.Stdin)
-			if f, ok := legalActions[action].(func(s string, pr profiles.ProfileRepository)); ok {
+			if f, ok := legalActions[action].(func(s string, pr profiles.ProfileService)); ok {
 				if len(args) < 2 {
 					f("", profileService)
 				} else {
@@ -67,11 +63,11 @@ func init() {
 	})
 }
 
-func add(name string, pr profiles.ProfileRepository){
+func add(name string, pr profiles.ProfileService) {
 	pr.Create(name)
 }
 
-func list(name string, pr profiles.ProfileRepository) {
+func list(name string, pr profiles.ProfileService) {
 	if name != "" {
 		out := pr.Find(name)
 		if out != nil {
@@ -91,14 +87,14 @@ func list(name string, pr profiles.ProfileRepository) {
 	fmt.Println(string(printout))
 }
 
-func use(name string, pr profiles.ProfileRepository) {
+func use(name string, pr profiles.ProfileService) {
 	pr.Activate(name)
 }
 
-func edit(name string,pr profiles.ProfileRepository) {
+func edit(name string, pr profiles.ProfileService) {
 	pr.Update(name)
 }
 
-func remove(name string, pr profiles.ProfileRepository) {
+func remove(name string, pr profiles.ProfileService) {
 	pr.Remove(name)
 }

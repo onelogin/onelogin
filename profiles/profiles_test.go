@@ -74,8 +74,10 @@ func TestIndex(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			profilesRepo := New(MockRepository{StorageMedia: test.MockStorage}, nil)
-			profiles := profilesRepo.Index()
+			profilesSvc := ProfileService{
+				Repository: MockRepository{StorageMedia: test.MockStorage},
+			}
+			profiles := profilesSvc.Index()
 			assert.Equal(t, test.ExpectedReturnCount, len(profiles))
 		})
 	}
@@ -105,8 +107,10 @@ func TestFind(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			profilesRepo := New(MockRepository{StorageMedia: test.MockStorage}, nil)
-			profile := profilesRepo.Find(test.MockInput)
+			profilesSvc := ProfileService{
+				Repository: MockRepository{StorageMedia: test.MockStorage},
+			}
+			profile := profilesSvc.Find(test.MockInput)
 			if test.ExpectedReturn == "" {
 				assert.Nil(t, profile)
 			} else {
@@ -132,10 +136,12 @@ func TestActivate(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			profilesRepo := New(MockRepository{StorageMedia: test.MockStorage}, nil)
-			profilesRepo.Activate(test.MockInput)
-			tProfile := profilesRepo.Find("t")
-			sProfile := profilesRepo.Find("s")
+			profilesSvc := ProfileService{
+				Repository: MockRepository{StorageMedia: test.MockStorage},
+			}
+			profilesSvc.Activate(test.MockInput)
+			tProfile := profilesSvc.Find("t")
+			sProfile := profilesSvc.Find("s")
 			assert.Equal(t, test.ExpectedEndT, (*tProfile).Active)
 			assert.Equal(t, test.ExpectedEndS, (*sProfile).Active)
 		})
@@ -160,10 +166,13 @@ func TestCreate(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			profilesRepo := New(MockRepository{StorageMedia: test.MockStorage}, test.CmdLineInput)
-			profilesRepo.Create(test.ProfileName)
-			profileCount := len(profilesRepo.Index())
-			newProfile := profilesRepo.Find(test.ProfileName)
+			profilesSvc := ProfileService{
+				Repository:  MockRepository{StorageMedia: test.MockStorage},
+				InputReader: test.CmdLineInput,
+			}
+			profilesSvc.Create(test.ProfileName)
+			profileCount := len(profilesSvc.Index())
+			newProfile := profilesSvc.Find(test.ProfileName)
 			assert.Equal(t, test.ExpectedProfileCount, profileCount)
 			assert.Equal(t, test.ExpectedProfile, *newProfile)
 		})
@@ -188,10 +197,13 @@ func TestUpdate(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			profilesRepo := New(MockRepository{StorageMedia: test.MockStorage}, test.CmdLineInput)
-			profilesRepo.Update(test.ProfileName)
-			profileCount := len(profilesRepo.Index())
-			newProfile := profilesRepo.Find(test.ProfileName)
+			profilesSvc := ProfileService{
+				Repository:  MockRepository{StorageMedia: test.MockStorage},
+				InputReader: test.CmdLineInput,
+			}
+			profilesSvc.Update(test.ProfileName)
+			profileCount := len(profilesSvc.Index())
+			newProfile := profilesSvc.Find(test.ProfileName)
 			assert.Equal(t, test.ExpectedProfileCount, profileCount)
 			assert.Equal(t, test.ExpectedProfile, *newProfile)
 		})
@@ -213,9 +225,11 @@ func TestRemove(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			profilesRepo := New(MockRepository{StorageMedia: test.MockStorage}, nil)
-			profilesRepo.Remove(test.ProfileName)
-			profileCount := len(profilesRepo.Index())
+			profilesSvc := ProfileService{
+				Repository: MockRepository{StorageMedia: test.MockStorage},
+			}
+			profilesSvc.Remove(test.ProfileName)
+			profileCount := len(profilesSvc.Index())
 			assert.Equal(t, test.ExpectedProfileCount, profileCount)
 		})
 	}

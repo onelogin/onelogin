@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type ProfileRepository struct {
+type ProfileService struct {
 	Repository  Repository
 	InputReader io.Reader
 }
@@ -23,11 +23,7 @@ type Profile struct {
 	ClientSecret string `json:"client_secret"`
 }
 
-func New(r Repository, rdr io.Reader) ProfileRepository {
-	return ProfileRepository{Repository: r, InputReader: rdr}
-}
-
-func (p ProfileRepository) Activate(name string) {
+func (p ProfileService) Activate(name string) {
 	profiles := p.Index()
 	for n, prof := range profiles {
 		if n == name {
@@ -39,7 +35,7 @@ func (p ProfileRepository) Activate(name string) {
 	p.Repository.persist(profiles)
 }
 
-func (p ProfileRepository) Find(name string) *Profile {
+func (p ProfileService) Find(name string) *Profile {
 	profiles := p.Index()
 	if profiles[name] != nil {
 		return profiles[name]
@@ -47,13 +43,13 @@ func (p ProfileRepository) Find(name string) *Profile {
 	return nil
 }
 
-func (p ProfileRepository) Index() map[string]*Profile {
+func (p ProfileService) Index() map[string]*Profile {
 	existingProfiles := map[string]*Profile{}
 	fileData, err := p.Repository.readAll()
 	if err != nil {
 		log.Fatalln("Unable to read profiles", err)
 	}
-	if fileData[0] == 0 { // no data in file
+	if len(fileData) == 0 || fileData[0] == 0 { // no data in file
 		return existingProfiles
 	}
 	err = json.Unmarshal(bytes.Trim(fileData, "\x00"), &existingProfiles)
@@ -63,19 +59,22 @@ func (p ProfileRepository) Index() map[string]*Profile {
 	return existingProfiles
 }
 
-func (p ProfileRepository) Create(name string) {
+func (p ProfileService) Create(name string) {
 	existingProfiles := p.Index()
 	profile := existingProfiles[name]
 	if profile != nil {
 		log.Fatalln("Profile with this name already exists!")
 	}
 	profile = &Profile{Name: name}
+	if len(existingProfiles) == 0 {
+		profile.Active = true
+	}
 	collectProfileInput(profile, p.InputReader)
 	existingProfiles[(*profile).Name] = profile
 	p.Repository.persist(existingProfiles)
 }
 
-func (p ProfileRepository) Update(name string) {
+func (p ProfileService) Update(name string) {
 	existingProfiles := p.Index()
 	profile := existingProfiles[name]
 	if profile == nil {
@@ -86,7 +85,7 @@ func (p ProfileRepository) Update(name string) {
 	p.Repository.persist(existingProfiles)
 }
 
-func (p ProfileRepository) Remove(name string) {
+func (p ProfileService) Remove(name string) {
 	existingProfiles := p.Index()
 	delete(existingProfiles, name)
 	p.Repository.persist(existingProfiles)
