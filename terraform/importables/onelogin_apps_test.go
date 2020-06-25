@@ -20,9 +20,9 @@ func TestAssembleResourceDefinitions(t *testing.T) {
 				apps.App{Name: oltypes.String("test3"), AuthMethod: oltypes.Int32(1), ID: oltypes.Int32(3)},
 			},
 			ExpectedOut: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_oidc_apps", Name: "test1-1"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_saml_apps", Name: "test2-2"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_apps", Name: "test3-3"},
+				ResourceDefinition{Provider: "onelogin", Type: "onelogin_oidc_apps", Name: "onelogin_oidc_apps-1"},
+				ResourceDefinition{Provider: "onelogin", Type: "onelogin_saml_apps", Name: "onelogin_saml_apps-2"},
+				ResourceDefinition{Provider: "onelogin", Type: "onelogin_apps", Name: "onelogin_apps-3"},
 			},
 		},
 	}
