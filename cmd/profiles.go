@@ -40,13 +40,13 @@ func init() {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			action := args[0]
-			profileConfig := viper.ConfigFileUsed()
-			f, err := os.OpenFile(profileConfig, os.O_RDWR, 0600)
+			configFile, err := os.OpenFile(viper.ConfigFileUsed(), os.O_RDWR, 0600)
 			if err != nil {
-				log.Fatalln("Unable to open profiles file")
+				configFile.Close()
+				log.Fatalln("Unable to open profiles file", err)
 			}
 			profileService := profiles.ProfileService{
-				Repository:  profiles.FileRepository{StorageMedia: f},
+				Repository:  profiles.FileRepository{StorageMedia: configFile},
 				InputReader: os.Stdin,
 			}
 			if f, ok := legalActions[action].(func(s string, pr profiles.ProfileService)); ok {
@@ -56,7 +56,9 @@ func init() {
 					profileName := args[1]
 					f(profileName, profileService)
 				}
+				configFile.Close()
 			} else {
+				configFile.Close()
 				log.Fatalf("Unexpected Error!")
 			}
 		},

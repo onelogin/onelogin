@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -84,7 +85,8 @@ func initConfig() {
 		p = filepath.Join(p, "profiles.json")
 		_, err := os.Create(p)
 		if err != nil {
-			fmt.Println("Unable to create config file!")
+			log.Fatalln("Unable to create config file!")
 		}
+		viper.ReadInConfig()
 	}
 }
