@@ -17,17 +17,12 @@ Running this command will do the following:
 This assumes you have Terraform installed and the OneLogin provider side-loaded.
 The OneLogin Terraform provider is still in beta. If you'd like to use the beta [see this guide](https://github.com/onelogin/onelogin-terraform-provider#onelogin-terraform-provider-sdk)
 
-### API Credentials
-The CLI uses the OneLogin API and therefore you'll need admin access to a OneLogin account where you can create API credentials.
+### Configuration
+Add your OneLogin profiles with `onelogin profiles add <profile_name>`
 
-Create a set of API credentials with _manage all_ permission.
+You'll be prompted for your client_id and client_secret (obtained by creating a set of developer keys in the onelogin admin portal)
 
-* Export these credentials to your environment and the provider will read them in from there
-```sh
-export ONELOGIN_CLIENT_ID=<your client id>
-export ONELOGIN_CLIENT_SECRET=<your client secret>
-export ONELOGIN_OAPI_URL=<the api url for your region>
-```
+You can add as many profiles as you like, and you can switch the active profile with `onelogin profiles use <profile_name>` which will point the CLI at the active account.
 
 ### Example
 Import all OneLogin apps, create a main.tf file, and establish Terraform state.
@@ -49,13 +44,6 @@ binary for your system and add it to your /bin folder or run it directly per you
 * `windows-amd64` => windows 64 bit
 * `linux-386`     => linux 32 bit
 * `linux-amd64`   => linux 64 bit
-
-### Configuration
-Add your OneLogin profiles with `onelogin profiles add <profile_name>`
-
-You'll be prompted for your client_id and client_secret (obtained by creating a set of developer keys in the onelogin admin portal)
-
-You can add as many profiles as you like, and you can switch the active profile with `onelogin profiles use <profile_name>` which will point the CLI at the active account.
 
 ### Use
 from an empty directory, where you plan to manage your main.tf file run:
