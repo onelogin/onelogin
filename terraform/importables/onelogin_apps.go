@@ -62,19 +62,23 @@ func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
 	return appApps
 }
 
+func (i OneloginAppsImportable) HCLShape() interface{} {
+	return &AppData{}
+}
+
 // the underlying data that represents the resource from the remote in terraform.
 // add fields here so they can be unmarshalled from tfstate json into the struct and handled by the importer
 type AppData struct {
-	AllowAssumedSignin *bool                  `json:"allow_assumed_signin,omitempty"`
-	ConnectorID        *int32                 `json:"connector_id,omitempty"`
-	Description        *string                `json:"description,omitempty"`
-	Name               *string                `json:"name,omitempty"`
-	Notes              *string                `json:"notes,omitempty"`
-	Visible            *bool                  `json:"visible,omitempty"`
-	Provisioning       []AppProvisioningData  `json:"provisioning,omitempty"`
-	Parameters         []AppParametersData    `json:"parameters,omitempty"`
-	Configuration      []AppConfigurationData `json:"configuration,omitempty"`
-	Rules              []AppRuleData          `json:"rules,omitempty"`
+	AllowAssumedSignin *bool                `json:"allow_assumed_signin,omitempty"`
+	ConnectorID        *int32               `json:"connector_id,omitempty"`
+	Description        *string              `json:"description,omitempty"`
+	Name               *string              `json:"name,omitempty"`
+	Notes              *string              `json:"notes,omitempty"`
+	Visible            *bool                `json:"visible,omitempty"`
+	Configuration      AppConfigurationData `json:"configuration,omitempty"`
+	Provisioning       AppProvisioningData  `json:"provisioning,omitempty"`
+	Parameters         []AppParametersData  `json:"parameters,omitempty"`
+	Rules              []AppRuleData        `json:"rules,omitempty"`
 }
 
 // AppProvisioning is the contract for provisioning.
@@ -85,11 +89,11 @@ type AppProvisioningData struct {
 // AppConfiguration is the contract for configuration.
 type AppConfigurationData struct {
 	RedirectURI                   *string `json:"redirect_uri,omitempty"`
-	RefreshTokenExpirationMinutes *int32  `json:"refresh_token_expiration_minutes,omitempty"`
+	RefreshTokenExpirationMinutes *string `json:"refresh_token_expiration_minutes,omitempty"`
 	LoginURL                      *string `json:"login_url,omitempty"`
-	OidcApplicationType           *int32  `json:"oidc_application_type,omitempty"`
-	TokenEndpointAuthMethod       *int32  `json:"token_endpoint_auth_method,omitempty"`
-	AccessTokenExpirationMinutes  *int32  `json:"access_token_expiration_minutes,omitempty"`
+	OidcApplicationType           *string `json:"oidc_application_type,omitempty"`
+	TokenEndpointAuthMethod       *string `json:"token_endpoint_auth_method,omitempty"`
+	AccessTokenExpirationMinutes  *string `json:"access_token_expiration_minutes,omitempty"`
 	ProviderArn                   *string `json:"provider_arn,omitempty"`
 	SignatureAlgorithm            *string `json:"signature_algorithm,omitempty"`
 }
