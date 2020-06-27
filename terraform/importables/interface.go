@@ -19,8 +19,10 @@ type ResourceDefinition struct {
 
 type AppQuerier interface {
 	Query(query *apps.AppsQuery) ([]apps.App, error)
+	GetOne(id int32) (*apps.App, error)
 }
 
 type UserMappingQuerier interface {
 	Query(query *usermappings.UserMappingsQuery) ([]usermappings.UserMapping, error)
+	GetOne(id int32) (*usermappings.UserMapping, error)
 }

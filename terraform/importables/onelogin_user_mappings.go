@@ -2,23 +2,38 @@ package tfimportables
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/user_mappings"
 	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
+	"log"
+	"strconv"
 )
 
 type OneloginUserMappingsImportable struct {
-	Service UserMappingQuerier
+	Service  UserMappingQuerier
+	SearchID string
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
 func (i OneloginUserMappingsImportable) ImportFromRemote() []ResourceDefinition {
 	fmt.Println("Collecting User Mappings from OneLogin...")
-
-	allApps := i.GetAll(i.Service)
-	resourceDefinitions := assembleUserMappingResourceDefinitions(allApps)
+	var remoteUserMappings []usermappings.UserMapping
+	if i.SearchID == "" {
+		fmt.Println("Collecting User Mappings from OneLogin...")
+		remoteUserMappings = i.GetAll(i.Service)
+	} else {
+		fmt.Printf("Collecting User Mapping %s from OneLogin...\n", i.SearchID)
+		id, err := strconv.Atoi(i.SearchID)
+		if err != nil {
+			log.Fatalln("invalid input given for id", i.SearchID)
+		}
+		userMapping, err := i.Service.GetOne(int32(id))
+		if err != nil {
+			log.Fatalln("Unable to locate resource with id", id)
+		}
+		remoteUserMappings = []usermappings.UserMapping{*userMapping}
+	}
+	resourceDefinitions := assembleUserMappingResourceDefinitions(remoteUserMappings)
 	return resourceDefinitions
 }
 

@@ -40,6 +40,7 @@ func terraformImport(cmd *cobra.Command, args []string) {
 	var (
 		profiles      map[string]map[string]interface{}
 		activeProfile map[string]interface{}
+		searchId      string
 	)
 	if err := viper.Unmarshal(&profiles); err != nil {
 		fmt.Println("No profiles detected. Add a profile with [onelogin profiles add <profile_name>]")
@@ -63,11 +64,14 @@ func terraformImport(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalln("Unable to connect to remote!", err)
 	}
+	if len(args) > 1 {
+		searchId = args[1]
+	}
 
 	importables := map[string]tfimportables.Importable{
-		"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2},
-		"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_saml_apps"},
-		"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_oidc_apps"},
+		"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: searchId},
+		"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: searchId, AppType: "onelogin_saml_apps"},
+		"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: searchId, AppType: "onelogin_oidc_apps"},
 		"onelogin_user_mappings": tfimportables.OneloginUserMappingsImportable{Service: oneloginClient.Services.UserMappingsV2},
 	}
 
