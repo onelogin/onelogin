@@ -76,13 +76,13 @@ func TestImportAppFromRemote(t *testing.T) {
 		"It pulls all apps of a certain type": {
 			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test2-2", Type: "onelogin_saml_apps"},
+				ResourceDefinition{Provider: "onelogin", Name: "onelogin_saml_apps-2", Type: "onelogin_saml_apps"},
 			},
 		},
 		"It gets one app": {
 			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}, SearchID: "1"},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test2-2", Type: "onelogin_saml_apps"},
+				ResourceDefinition{Provider: "onelogin", Name: "onelogin_saml_apps-2", Type: "onelogin_saml_apps"},
 			},
 		},
 	}
