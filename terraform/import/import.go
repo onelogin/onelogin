@@ -18,6 +18,25 @@ import (
 	"strings"
 )
 
+// State is the in memory representation of tfstate.
+type State struct {
+	Resources []StateResource `json:"resources"`
+}
+
+// Terraform resource representation
+type StateResource struct {
+	Content   []byte
+	Name      string             `json:"name"`
+	Type      string             `json:"type"`
+	Provider  string             `json:"provider"`
+	Instances []ResourceInstance `json:"instances"`
+}
+
+// An instance of a particular resource without the terraform information
+type ResourceInstance struct {
+	Data interface{} `json:"attributes"`
+}
+
 // ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
 // resource's terraform import command to update tfstate
 func ImportTFStateFromRemote(importable tfimportables.Importable) {
@@ -83,7 +102,7 @@ func ImportTFStateFromRemote(importable tfimportables.Importable) {
 		}
 		log.Fatalln("Unable to collect state from tfstate")
 	}
-	buffer := convertTFStateToHCL(state)
+	buffer := convertTFStateToHCL(state, importable)
 	f.Seek(0, 0) // go to the start of main.tf
 	_, err = f.Write(buffer)
 	if err != nil {
@@ -176,7 +195,7 @@ func createHCLDefinitionsBuffer(resourceDefinitions []tfimportables.ResourceDefi
 
 // takes the tfstate representations formats them as HCL and writes them to a bytes buffer
 // so it can be flushed into main.tf
-func convertTFStateToHCL(state State) []byte {
+func convertTFStateToHCL(state State, importable tfimportables.Importable) []byte {
 	var builder strings.Builder
 	knownProviders := map[string]int{}
 
@@ -191,8 +210,10 @@ func convertTFStateToHCL(state State) []byte {
 		for _, instance := range resource.Instances {
 			builder.WriteString(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))
 			builder.WriteString(fmt.Sprintf("\tprovider = %s\n", providerDefinition))
-			sculptedData := sculpt(resource.Type, instance.Data)
-			convertToHCLLine(sculptedData, 1, &builder)
+			b, _ := json.Marshal(instance.Data)
+			hclShape := importable.HCLShape()
+			json.Unmarshal(b, hclShape)
+			convertToHCLLine(hclShape, 1, &builder)
 			builder.WriteString("}\n\n")
 		}
 		builder.WriteString(string(resource.Content))
@@ -217,36 +238,43 @@ func convertToHCLLine(input interface{}, indentLevel int, builder *strings.Build
 	}
 	var m map[string]interface{}
 	json.Unmarshal(b, &m)
-
 	for k, v := range m {
-		switch reflect.TypeOf(v).Kind() {
-		case reflect.String:
-			builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))
-		case reflect.Int, reflect.Int32, reflect.Float32, reflect.Float64, reflect.Bool:
-			builder.WriteString(fmt.Sprintf("%s%s = %v\n", indent(indentLevel), utils.ToSnakeCase(k), v))
-		case reflect.Array, reflect.Slice:
-			sl := v.([]interface{})
-			if len(sl) > 0 {
-				switch reflect.TypeOf(sl[0]).Kind() {
-				case reflect.Array, reflect.Slice, reflect.Map:
-					for j := 0; j < len(sl); j++ {
-						builder.WriteString(strings.ToLower(fmt.Sprintf("\n%s%s {\n", indent(indentLevel), utils.ToSnakeCase(k))))
-						convertToHCLLine(sl[j], indentLevel+1, builder)
-						builder.WriteString(fmt.Sprintf("%s}\n", indent(indentLevel)))
-					}
-				default:
-					builder.WriteString(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))
-					for j := 0; j < len(sl); j++ {
-						builder.WriteString(fmt.Sprintf("%q", sl[j]))
-						if j < len(sl)-1 {
-							builder.WriteString(",")
+		if v != nil {
+			switch reflect.TypeOf(v).Kind() {
+			case reflect.String:
+				builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))
+			case reflect.Int, reflect.Int32, reflect.Float32, reflect.Float64, reflect.Bool:
+				builder.WriteString(fmt.Sprintf("%s%s = %v\n", indent(indentLevel), utils.ToSnakeCase(k), v))
+			case reflect.Array, reflect.Slice:
+				sl := v.([]interface{})
+				if len(sl) > 0 {
+					switch reflect.TypeOf(sl[0]).Kind() { // array of complex stuff
+					case reflect.Array, reflect.Slice, reflect.Map:
+						for j := 0; j < len(sl); j++ {
+							builder.WriteString(strings.ToLower(fmt.Sprintf("\n%s%s {\n", indent(indentLevel), utils.ToSnakeCase(k))))
+							convertToHCLLine(sl[j], indentLevel+1, builder)
+							builder.WriteString(fmt.Sprintf("%s}\n", indent(indentLevel)))
 						}
+					default: // array of strings
+						builder.WriteString(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))
+						for j := 0; j < len(sl); j++ {
+							builder.WriteString(fmt.Sprintf("%q", sl[j]))
+							if j < len(sl)-1 {
+								builder.WriteString(",")
+							}
+						}
+						builder.WriteString("]\n")
 					}
-					builder.WriteString("]\n")
 				}
+			case reflect.Map:
+				if len(v.(map[string]interface{})) > 0 {
+					builder.WriteString(strings.ToLower(fmt.Sprintf("\n%s%s = {\n", indent(indentLevel), utils.ToSnakeCase(k))))
+					convertToHCLLine(v, indentLevel+1, builder)
+					builder.WriteString(fmt.Sprintf("%s}\n", indent(indentLevel)))
+				}
+			default:
+				fmt.Println("Unable to Determine Type", k, v)
 			}
-		default:
-			fmt.Println("Unable to Determine Type")
 		}
 	}
 }

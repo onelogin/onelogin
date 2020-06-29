@@ -40,8 +40,11 @@ func (i OneloginUserMappingsImportable) GetAll(userMappingsService UserMappingQu
 	if err != nil {
 		log.Fatal("error retrieving apps ", err)
 	}
-
 	return um
+}
+
+func (i OneloginUserMappingsImportable) HCLShape() interface{} {
+	return &UserMappingData{}
 }
 
 // the underlying data that represents the resource from the remote in terraform.
