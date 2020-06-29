@@ -1,11 +1,10 @@
 package tfimportables
 
 import (
-	"testing"
-
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestAssembleResourceDefinitions(t *testing.T) {
@@ -34,12 +33,16 @@ func TestAssembleResourceDefinitions(t *testing.T) {
 	}
 }
 
-type MockService struct{}
+type MockAppsService struct{}
 
-func (svc MockService) Query(query *apps.AppsQuery) ([]apps.App, error) {
+func (svc MockAppsService) Query(query *apps.AppsQuery) ([]apps.App, error) {
 	return []apps.App{
 		apps.App{Name: oltypes.String("test2"), AuthMethod: oltypes.Int32(2), ID: oltypes.Int32(2)},
 	}, nil
+}
+
+func (svc MockAppsService) GetOne(id int32) (*apps.App, error) {
+	return &apps.App{Name: oltypes.String("test2"), AuthMethod: oltypes.Int32(2), ID: oltypes.Int32(2)}, nil
 }
 
 func TestGetAllApps(t *testing.T) {
@@ -50,7 +53,7 @@ func TestGetAllApps(t *testing.T) {
 	}{
 		"It pulls all apps of a certain type": {
 			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps"},
-			Service:    MockService{},
+			Service:    MockAppsService{},
 			Expected: []apps.App{
 				apps.App{Name: oltypes.String("test2"), AuthMethod: oltypes.Int32(2), ID: oltypes.Int32(2)},
 			},
@@ -59,6 +62,33 @@ func TestGetAllApps(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actual := test.Importable.GetAllApps(test.Service)
+			assert.Equal(t, test.Expected, actual)
+		})
+	}
+}
+
+func TestImportAppFromRemote(t *testing.T) {
+	tests := map[string]struct {
+		Importable OneloginAppsImportable
+		Service    AppQuerier
+		Expected   []ResourceDefinition
+	}{
+		"It pulls all apps of a certain type": {
+			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}},
+			Expected: []ResourceDefinition{
+				ResourceDefinition{Provider: "onelogin", Name: "onelogin_saml_apps-2", Type: "onelogin_saml_apps"},
+			},
+		},
+		"It gets one app": {
+			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}, SearchID: "1"},
+			Expected: []ResourceDefinition{
+				ResourceDefinition{Provider: "onelogin", Name: "onelogin_saml_apps-2", Type: "onelogin_saml_apps"},
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			actual := test.Importable.ImportFromRemote()
 			assert.Equal(t, test.Expected, actual)
 		})
 	}

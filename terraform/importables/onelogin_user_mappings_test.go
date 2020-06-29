@@ -41,6 +41,10 @@ func (svc MockUserMappingService) Query(query *usermappings.UserMappingsQuery) (
 	}, nil
 }
 
+func (svc MockUserMappingService) GetOne(id int32) (*usermappings.UserMapping, error) {
+	return &usermappings.UserMapping{Name: oltypes.String("test2"), ID: oltypes.Int32(2)}, nil
+}
+
 func TestGetAll(t *testing.T) {
 	tests := map[string]struct {
 		Importable OneloginUserMappingsImportable
@@ -58,6 +62,33 @@ func TestGetAll(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actual := test.Importable.GetAll(test.Service)
+			assert.Equal(t, test.Expected, actual)
+		})
+	}
+}
+
+func TestImportUserMappingFromRemote(t *testing.T) {
+	tests := map[string]struct {
+		Importable OneloginUserMappingsImportable
+		Service    UserMappingQuerier
+		Expected   []ResourceDefinition
+	}{
+		"It pulls all apps of a certain type": {
+			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}},
+			Expected: []ResourceDefinition{
+				ResourceDefinition{Provider: "onelogin", Name: "test2-2", Type: "onelogin_user_mappings"},
+			},
+		},
+		"It gets one app": {
+			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}, SearchID: "1"},
+			Expected: []ResourceDefinition{
+				ResourceDefinition{Provider: "onelogin", Name: "test2-2", Type: "onelogin_user_mappings"},
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			actual := test.Importable.ImportFromRemote()
 			assert.Equal(t, test.Expected, actual)
 		})
 	}

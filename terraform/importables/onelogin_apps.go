@@ -3,23 +3,38 @@ package tfimportables
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
 	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
 type OneloginAppsImportable struct {
-	AppType string
-	Service AppQuerier
+	AppType  string
+	SearchID string
+	Service  AppQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
 func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
-	fmt.Println("Collecting Apps from OneLogin...")
-
-	allApps := i.GetAllApps(i.Service)
-	resourceDefinitions := assembleResourceDefinitions(allApps)
+	var remoteApps []apps.App
+	if i.SearchID == "" {
+		fmt.Println("Collecting Apps from OneLogin...")
+		remoteApps = i.GetAllApps(i.Service)
+	} else {
+		fmt.Printf("Collecting App %s from OneLogin...\n", i.SearchID)
+		id, err := strconv.Atoi(i.SearchID)
+		if err != nil {
+			log.Fatalln("invalid input given for id", i.SearchID)
+		}
+		app, err := i.Service.GetOne(int32(id))
+		if err != nil {
+			log.Fatalln("Unable to locate resource with id", id)
+		}
+		remoteApps = []apps.App{*app}
+	}
+	resourceDefinitions := assembleResourceDefinitions(remoteApps)
 	return resourceDefinitions
 }
 
