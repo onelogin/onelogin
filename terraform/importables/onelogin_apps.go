@@ -36,7 +36,7 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 		default:
 			resourceDefinition.Type = "onelogin_apps"
 		}
-		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")), *app.ID)
+		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(resourceDefinition.Type), *app.ID)
 		resourceDefinitions[i] = resourceDefinition
 	}
 	return resourceDefinitions
