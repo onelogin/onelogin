@@ -5,8 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
-	// "strings"
-	// "os"
 	"testing"
 )
 

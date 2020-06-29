@@ -83,8 +83,11 @@ func init() {
 			if legalActions[action] == nil {
 				log.Fatalf("Illegal Action!")
 			}
-			if (action == "show" || action == "add" || action == "use" || action == "edit" || action == "update" || action == "remove" || action == "delete") && len(args) < 2 {
-				log.Fatalf("Profile Name is required for this action!")
+			switch action {
+			case "show", "add", "use", "edit", "update", "remove", "delete":
+				if len(args) < 2 {
+					log.Fatalf("Profile Name is required for this action!")
+				}
 			}
 			return nil
 		},

@@ -32,9 +32,8 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "onelogin",
 	Short: "A CLI for managing IAM and Authentication resources",
-	Long: `The OneLogin CLI provides a convenient interface for managing OneLogin resources
-	from the command line such as Apps and User Mappings. `,
-	Run: func(cmd *cobra.Command, args []string) { fmt.Println("Welcome to OneLogin") },
+	Long:  `The OneLogin CLI provides a convenient interface for managing OneLogin resources from the command line such as Apps and User Mappings. `,
+	Run:   func(cmd *cobra.Command, args []string) { fmt.Println("Welcome to OneLogin") },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
