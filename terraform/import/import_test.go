@@ -2,14 +2,11 @@ package tfimport
 
 import (
 	"fmt"
+	"github.com/onelogin/onelogin/terraform/importables"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
-
-	"github.com/onelogin/onelogin/terraform/importables"
-	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
-	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
-	"github.com/stretchr/testify/assert"
 )
 
 type MockFile struct {
@@ -30,22 +27,22 @@ func (m *MockFile) Read(p []byte) (int, error) {
 
 func TestFilterExistingDefinitions(t *testing.T) {
 	tests := map[string]struct {
-		InputFileCounts             map[string]map[string]int
+		InputReadWriter             io.Reader
 		InputResourceDefinitions    []tfimportables.ResourceDefinition
 		ExpectedResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedProviders           []string
 	}{
 		"it yields lists of resource definitions and providers not already defined in main.tf": {
-			InputFileCounts: map[string]map[string]int{
-				"resource": map[string]int{
-					"onelogin_apps.defined_in_main.tf_already": 1,
-				},
-				"provider": map[string]int{
-					"onelogin": 1,
-				},
-			},
+			InputReadWriter: strings.NewReader(`
+				resource onelogin_apps defined_in_main_already {
+					name = defined_in_main_already
+				}
+				provider onelogin {
+					alias "onelogin"
+				}
+			`),
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "defined_in_main.tf_already", Type: "onelogin_apps"},
+				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "defined_in_main_already", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "new_resource", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "test", Type: "onelogin_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "okra", Name: "test", Type: "okra_saml_apps"},
@@ -60,44 +57,9 @@ func TestFilterExistingDefinitions(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualResourceDefinitions, actualProviderDefinitions := filterExistingDefinitions(test.InputFileCounts, test.InputResourceDefinitions)
+			actualResourceDefinitions, actualProviderDefinitions := filterExistingDefinitions(test.InputReadWriter, test.InputResourceDefinitions)
 			assert.Equal(t, test.ExpectedResourceDefinitions, actualResourceDefinitions)
 			assert.Equal(t, test.ExpectedProviders, actualProviderDefinitions)
-		})
-	}
-}
-
-func TestCollectTerraformDefinitionsFromFile(t *testing.T) {
-	tests := map[string]struct {
-		InputReadWriter     io.Reader
-		ExpectedDefinitions map[string]map[string]int
-	}{
-		"it finds resource and provider definitions in main.tf": {
-			InputReadWriter: strings.NewReader(`
-				provider onelogin {
-					alias = "onelogin"
-				}
-				resource onelogin_apps test {
-					name = "should not be here"
-				}
-				resource onelogin_apps test {
-					name = "this is not proper HCL and will get counted again"
-				}
-			`),
-			ExpectedDefinitions: map[string]map[string]int{
-				"resource": map[string]int{
-					"onelogin_apps.test": 2,
-				},
-				"provider": map[string]int{
-					"onelogin": 1,
-				},
-			},
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := collectTerraformDefinitionsFromFile(test.InputReadWriter)
-			assert.Equal(t, test.ExpectedDefinitions, actual)
 		})
 	}
 }
@@ -116,23 +78,24 @@ func TestConvertTFStateToHCL(t *testing.T) {
 						Provider: "provider.onelogin",
 						Instances: []ResourceInstance{
 							ResourceInstance{
-								Data: ResourceData{
-									Name:         oltypes.String("test"),
-									ConnectorID:  oltypes.Int32(22),
-									Rules:        []Rule{Rule{Actions: []RuleActions{RuleActions{Value: []string{"member_of", "asdf"}}}}},
-									Provisioning: []apps.AppProvisioning{apps.AppProvisioning{Enabled: oltypes.Bool(true)}},
+								Data: map[string]interface{}{
+									"name":          "test",
+									"connector_id":  22,
+									"rules":         []map[string]interface{}{{"actions": []map[string]interface{}{{"value": []string{"member_of", "asdf"}}}}},
+									"provisioning":  map[string]bool{"enabled": true},
+									"configuration": map[string]string{"provider_arn": "arn", "signature_algorithm": "sha-256"},
 								},
 							},
 						},
 					},
 				},
 			},
-			ExpectedOutput: fmt.Sprintf("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\n\trules {\n\n\t\tactions {\n\t\t\tvalue = [\"member_of\",\"asdf\"]\n\t\t}\n\t}\n\tconnector_id = 22\n\tname = \"test\"\n\n\tprovisioning {\n\t\tenabled = true\n\t}\n}\n\n"),
+			ExpectedOutput: fmt.Sprintf("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\tconnector_id = 22\n\tname = \"test\"\n\n\tconfiguration = {\n\t\tprovider_arn = \"arn\"\n\t\tsignature_algorithm = \"sha-256\"\n\t}\n\n\tprovisioning = {\n\t\tenabled = true\n\t}\n\n\trules {\n\n\t\tactions {\n\t\t\tvalue = [\"member_of\",\"asdf\"]\n\t\t}\n\t}\n}\n\n"),
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := convertTFStateToHCL(test.InputState)
+			actual := convertTFStateToHCL(test.InputState, tfimportables.OneloginAppsImportable{})
 			assert.Equal(t, len(test.ExpectedOutput), len(string(actual)))
 		})
 	}
@@ -158,7 +121,7 @@ func TestAppendDefinitionsToMainTF(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actual := make([]byte, len(test.ExpectedOut))
-			appendDefinitionsToMainTF(test.InputWriter, test.InputResourceDefinitions, test.InputProviderDefinitions)
+			actual = createHCLDefinitionsBuffer(test.InputResourceDefinitions, test.InputProviderDefinitions)
 			test.InputWriter.Read(actual)
 			assert.Equal(t, test.ExpectedOut, actual)
 		})

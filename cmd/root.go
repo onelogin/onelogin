@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE dominick.caponi@onelogin.com
+Copyright © 2020 OneLogin Inc dominick.caponi@onelogin.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
+	"log"
+	"os"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -31,13 +32,8 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "onelogin",
 	Short: "A CLI for managing IAM and Authentication resources",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) { fmt.Println("Welcome to OneLogin") },
+	Long:  `The OneLogin CLI provides a convenient interface for managing OneLogin resources from the command line such as Apps and User Mappings. `,
+	Run:   func(cmd *cobra.Command, args []string) { fmt.Println("Welcome to OneLogin") },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -56,7 +52,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.onelogin.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.onelogin.json)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -65,26 +61,31 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
 		// Search config in home directory with name ".onelogin" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".onelogin")
+		viper.AddConfigPath(fmt.Sprintf("%s/.onelogin", home))
+		viper.SetConfigName("profiles")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		p := filepath.Join(home, ".onelogin")
+		os.Mkdir(p, 0750)
+		p = filepath.Join(p, "profiles.json")
+		_, err := os.Create(p)
+		if err != nil {
+			log.Fatalln("Unable to create config file!")
+		}
+		viper.ReadInConfig()
 	}
 }

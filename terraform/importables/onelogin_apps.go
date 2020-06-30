@@ -3,23 +3,38 @@ package tfimportables
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
 	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
 type OneloginAppsImportable struct {
-	AppType string
-	Service AppQuerier
+	AppType  string
+	SearchID string
+	Service  AppQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
 func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
-	fmt.Println("Collecting Apps from OneLogin...")
-
-	allApps := i.GetAllApps(i.Service)
-	resourceDefinitions := assembleResourceDefinitions(allApps)
+	var remoteApps []apps.App
+	if i.SearchID == "" {
+		fmt.Println("Collecting Apps from OneLogin...")
+		remoteApps = i.GetAllApps(i.Service)
+	} else {
+		fmt.Printf("Collecting App %s from OneLogin...\n", i.SearchID)
+		id, err := strconv.Atoi(i.SearchID)
+		if err != nil {
+			log.Fatalln("invalid input given for id", i.SearchID)
+		}
+		app, err := i.Service.GetOne(int32(id))
+		if err != nil {
+			log.Fatalln("Unable to locate resource with id", id)
+		}
+		remoteApps = []apps.App{*app}
+	}
+	resourceDefinitions := assembleResourceDefinitions(remoteApps)
 	return resourceDefinitions
 }
 
@@ -36,7 +51,7 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 		default:
 			resourceDefinition.Type = "onelogin_apps"
 		}
-		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")), *app.ID)
+		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(resourceDefinition.Type), *app.ID)
 		resourceDefinitions[i] = resourceDefinition
 	}
 	return resourceDefinitions
@@ -60,4 +75,77 @@ func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
 	}
 
 	return appApps
+}
+
+func (i OneloginAppsImportable) HCLShape() interface{} {
+	return &AppData{}
+}
+
+// the underlying data that represents the resource from the remote in terraform.
+// add fields here so they can be unmarshalled from tfstate json into the struct and handled by the importer
+type AppData struct {
+	AllowAssumedSignin *bool                `json:"allow_assumed_signin,omitempty"`
+	ConnectorID        *int32               `json:"connector_id,omitempty"`
+	Description        *string              `json:"description,omitempty"`
+	Name               *string              `json:"name,omitempty"`
+	Notes              *string              `json:"notes,omitempty"`
+	Visible            *bool                `json:"visible,omitempty"`
+	Configuration      AppConfigurationData `json:"configuration,omitempty"`
+	Provisioning       AppProvisioningData  `json:"provisioning,omitempty"`
+	Parameters         []AppParametersData  `json:"parameters,omitempty"`
+	Rules              []AppRuleData        `json:"rules,omitempty"`
+}
+
+// AppProvisioning is the contract for provisioning.
+type AppProvisioningData struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// AppConfiguration is the contract for configuration.
+type AppConfigurationData struct {
+	RedirectURI                   *string `json:"redirect_uri,omitempty"`
+	RefreshTokenExpirationMinutes *string `json:"refresh_token_expiration_minutes,omitempty"`
+	LoginURL                      *string `json:"login_url,omitempty"`
+	OidcApplicationType           *string `json:"oidc_application_type,omitempty"`
+	TokenEndpointAuthMethod       *string `json:"token_endpoint_auth_method,omitempty"`
+	AccessTokenExpirationMinutes  *string `json:"access_token_expiration_minutes,omitempty"`
+	ProviderArn                   *string `json:"provider_arn,omitempty"`
+	SignatureAlgorithm            *string `json:"signature_algorithm,omitempty"`
+}
+
+// AppParameters is the contract for parameters.
+type AppParametersData struct {
+	ID                        *int32  `json:"id,omitempty"`
+	Label                     *string `json:"label,omitempty"`
+	UserAttributeMappings     *string `json:"user_attribute_mappings,omitempty"`
+	UserAttributeMacros       *string `json:"user_attribute_macros,omitempty"`
+	AttributesTransformations *string `json:"attributes_transformations,omitempty"`
+	SkipIfBlank               *bool   `json:"skip_if_blank,omitempty"`
+	Values                    *string `json:"values,omitempty,omitempty"`
+	DefaultValues             *string `json:"default_values,omitempty"`
+	ParamKeyName              *string `json:"param_key_name,omitempty"`
+	ProvisionedEntitlements   *bool   `json:"provisioned_entitlements,omitempty"`
+	SafeEntitlementsEnabled   *bool   `json:"safe_entitlements_enabled,omitempty"`
+	IncludeInSamlAssertion    *bool   `json:"include_in_saml_assertion,omitempty"`
+}
+
+// Define our own version of the app rules to refine what fields get written to main.tf plan
+type AppRuleData struct {
+	Name       *string                 `json:"name,omitempty"`
+	Match      *string                 `json:"match,omitempty"`
+	Enabled    *bool                   `json:"enabled,omitempty"`
+	Conditions []AppRuleConditionsData `json:"conditions,omitempty"`
+	Actions    []AppRuleActionsData    `json:"actions,omitempty"`
+}
+
+type AppRuleActionsData struct {
+	Action     *string  `json:"action,omitempty"`
+	Value      []string `json:"value,omitempty"`
+	Expression *string  `json:"expression,omitempty"`
+}
+
+type AppRuleConditionsData struct {
+	Source   *string `json:"source,omitempty"`
+	Operator *string `json:"operator,omitempty"`
+	Value    *string `json:"value,omitempty"`
 }

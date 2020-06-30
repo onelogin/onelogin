@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
@@ -11,6 +10,7 @@ import (
 	"github.com/onelogin/onelogin/terraform/importables"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -37,20 +37,41 @@ func init() {
 
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
+	var (
+		profiles      map[string]map[string]interface{}
+		activeProfile map[string]interface{}
+		searchId      string
+	)
+	if err := viper.Unmarshal(&profiles); err != nil {
+		fmt.Println("No profiles detected. Add a profile with [onelogin profiles add <profile_name>]")
+	} else {
+		for _, prof := range profiles {
+			if prof["active"].(bool) == true {
+				activeProfile = prof
+				break
+			}
+		}
+		if activeProfile == nil {
+			fmt.Println("No active profile detected. Activate a profile with [onelogin profiles use <profile_name>]")
+		}
+	}
 	oneloginClient, err := client.NewClient(&client.APIClientConfig{
 		Timeout:      5,
-		ClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
-		ClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
-		Url:          os.Getenv("ONELOGIN_OAPI_URL"),
+		ClientID:     activeProfile["client_id"].(string),
+		ClientSecret: activeProfile["client_secret"].(string),
+		Url:          fmt.Sprintf("https://api.%s.onelogin.com", activeProfile["region"].(string)),
 	})
 	if err != nil {
 		log.Fatalln("Unable to connect to remote!", err)
 	}
+	if len(args) > 1 {
+		searchId = args[1]
+	}
 
 	importables := map[string]tfimportables.Importable{
-		"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2},
-		"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_saml_apps"},
-		"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, AppType: "onelogin_oidc_apps"},
+		"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: searchId},
+		"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: searchId, AppType: "onelogin_saml_apps"},
+		"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: searchId, AppType: "onelogin_oidc_apps"},
 		"onelogin_user_mappings": tfimportables.OneloginUserMappingsImportable{Service: oneloginClient.Services.UserMappingsV2},
 	}
 
@@ -61,10 +82,8 @@ func terraformImport(cmd *cobra.Command, args []string) {
 		for k := range importables {
 			availableImportables = append(availableImportables, fmt.Sprintf("%s", k))
 		}
-		log.Println("Must specify resource to import!")
 		log.Fatalf("Available resources: %s", availableImportables)
 	}
 
 	tfimport.ImportTFStateFromRemote(importable)
-	tfimport.UpdateMainTFFromState()
 }
