@@ -10,8 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -37,86 +35,7 @@ type ResourceInstance struct {
 	Data interface{} `json:"attributes"`
 }
 
-// ImportTFStateFromRemote writes the resource resourceDefinitions to main.tf and calls each
-// resource's terraform import command to update tfstate
-func ImportTFStateFromRemote(importable tfimportables.Importable) {
-	p := filepath.Join("main.tf")
-	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		log.Fatalln("Unable to open main.tf ", err)
-	}
-
-	newResourceDefinitions := importable.ImportFromRemote()
-	newResourceDefinitions, newProviderDefinitions := filterExistingDefinitions(f, newResourceDefinitions)
-
-	if len(newResourceDefinitions) == 0 {
-		fmt.Println("No new resources to import from remote")
-		if err := f.Close(); err != nil {
-			fmt.Println("Problem writing file", err)
-		}
-		os.Exit(0)
-	}
-
-	fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(newResourceDefinitions))
-	input := bufio.NewScanner(os.Stdin)
-	input.Scan()
-	text := strings.ToLower(input.Text())
-	if text != "y" && text != "yes" {
-		fmt.Printf("User aborted operation!")
-		if err := f.Close(); err != nil {
-			fmt.Println("Problem writing file", err)
-		}
-		os.Exit(0)
-	}
-
-	defBuffer := createHCLDefinitionsBuffer(newResourceDefinitions, newProviderDefinitions)
-	if _, err := f.Write(defBuffer); err != nil {
-		log.Fatal("Problem creating import file", err)
-	}
-
-	log.Println("Initializing Terraform with 'terraform init'...")
-	// #nosec G204
-	if err := exec.Command("terraform", "init").Run(); err != nil {
-		if err := f.Close(); err != nil {
-			log.Fatal("Problem writing to main.tf", err)
-		}
-		log.Fatal("Problem executing terraform init", err)
-	}
-
-	for i, resourceDefinition := range newResourceDefinitions {
-		arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
-		pos := strings.Index(arg1, "-")
-		id := arg1[pos+1 : len(arg1)]
-		// #nosec G204
-		cmd := exec.Command("terraform", "import", arg1, id)
-		log.Printf("Importing resource %d", i+1)
-		if err := cmd.Run(); err != nil {
-			log.Fatal("Problem executing terraform import", cmd.Args, err)
-		}
-	}
-
-	state, err := collectState() // grab the state from tfstate
-	if err != nil {
-		if err := f.Close(); err != nil {
-			log.Fatal("Problem writing to main.tf", err)
-		}
-		log.Fatalln("Unable to collect state from tfstate")
-	}
-	buffer := convertTFStateToHCL(state, importable)
-	f.Seek(0, 0) // go to the start of main.tf
-	_, err = f.Write(buffer)
-	if err != nil {
-		if err := f.Close(); err != nil {
-			fmt.Println("Problem writing file", err)
-		}
-		fmt.Println("ERROR Writing Final main.tf", err)
-	}
-	if err := f.Close(); err != nil {
-		fmt.Println("Problem writing file", err)
-	}
-}
-
-func collectState() (State, error) {
+func CollectState() (State, error) {
 	state := State{}
 	log.Println("Collecting State from tfstate File")
 	data, err := ioutil.ReadFile(filepath.Join("terraform.tfstate"))
@@ -134,7 +53,7 @@ func collectState() (State, error) {
 
 // compares incoming resources from remote to what is already defined in the main.tf
 // file to prevent duplicate definitions which breaks terraform import
-func filterExistingDefinitions(f io.Reader, resourceDefinitions []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
+func FilterExistingDefinitions(f io.Reader, importable tfimportables.Importable) ([]tfimportables.ResourceDefinition, []string) {
 	searchCriteria := map[string]*regexp.Regexp{
 		"provider": regexp.MustCompile(`(\w*provider\w*)\s(([a-zA-Z\_]*))\s\{`),
 		"resource": regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`),
@@ -164,7 +83,7 @@ func filterExistingDefinitions(f io.Reader, resourceDefinitions []tfimportables.
 	uniqueResourceDefinitions := []tfimportables.ResourceDefinition{}
 	uniqueProviders := []string{}
 	providerMap := map[string]int{}
-
+	resourceDefinitions := importable.ImportFromRemote()
 	for _, resourceDefinition := range resourceDefinitions {
 		providerMap[resourceDefinition.Provider]++
 		if collection["resource"][fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)] == 0 {
@@ -182,7 +101,7 @@ func filterExistingDefinitions(f io.Reader, resourceDefinitions []tfimportables.
 }
 
 // in preparation for terraform import, appends empty resource definitions to the existing main.tf file
-func createHCLDefinitionsBuffer(resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string) []byte {
+func WriteHCLDefinitionHeaders(resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string, planFile io.Writer) error {
 	var builder strings.Builder
 	for _, newProvider := range providerDefinitions {
 		builder.WriteString(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))
@@ -190,12 +109,15 @@ func createHCLDefinitionsBuffer(resourceDefinitions []tfimportables.ResourceDefi
 	for _, resourceDefinition := range resourceDefinitions {
 		builder.WriteString(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))
 	}
-	return []byte(builder.String())
+	if _, err := planFile.Write([]byte(builder.String())); err != nil {
+		return err
+	}
+	return nil
 }
 
 // takes the tfstate representations formats them as HCL and writes them to a bytes buffer
 // so it can be flushed into main.tf
-func convertTFStateToHCL(state State, importable tfimportables.Importable) []byte {
+func ConvertTFStateToHCL(state State, importable tfimportables.Importable) []byte {
 	var builder strings.Builder
 	knownProviders := map[string]int{}
 

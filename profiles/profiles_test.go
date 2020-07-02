@@ -52,6 +52,33 @@ func (p MockRepository) persist(profiles map[string]*Profile) {
 	p.StorageMedia.Write(updatedProfiles)
 }
 
+func TestGetActive(t *testing.T) {
+	tests := map[string]struct {
+		MockStorage    *MockFile
+		ExpectedReturn *Profile
+	}{
+		"It gets the active profile": {
+			MockStorage:    &MockFile{Content: []byte(`{"t":{"name":"t","active":true,"region":"us","client_id":"ti","client_secret":"ts"}, "s":{"name":"s","active":false,"region":"us","client_id":"si","client_secret":"ss"}}`)},
+			ExpectedReturn: &Profile{Name: "t", Active: true, Region: "us", ClientID: "ti", ClientSecret: "ts"},
+		},
+		"It returns nil if no profile active": {
+			MockStorage: &MockFile{Content: []byte(`{"t":{"name":"t","active":false,"region":"us","client_id":"ti","client_secret":"ts"}, "s":{"name":"s","active":false,"region":"us","client_id":"si","client_secret":"ss"}}`)},
+		},
+		"It returns nil if no profiles": {
+			MockStorage: &MockFile{Content: []byte(`{}`)},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			profilesSvc := ProfileService{
+				Repository: MockRepository{StorageMedia: test.MockStorage},
+			}
+			profile := profilesSvc.GetActive()
+			assert.Equal(t, test.ExpectedReturn, profile)
+		})
+	}
+}
+
 func TestIndex(t *testing.T) {
 	tests := map[string]struct {
 		MockStorage         *MockFile
