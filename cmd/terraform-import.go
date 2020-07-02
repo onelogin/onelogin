@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
@@ -37,6 +38,7 @@ func init() {
 
 func terraformImport(cmd *cobra.Command, args []string) {
 	fmt.Println("Terraform Import!")
+	clientConfig := client.APIClientConfig{Timeout: 5}
 	var (
 		profiles      map[string]map[string]interface{}
 		activeProfile map[string]interface{}
@@ -52,15 +54,18 @@ func terraformImport(cmd *cobra.Command, args []string) {
 			}
 		}
 		if activeProfile == nil {
-			fmt.Println("No active profile detected. Activate a profile with [onelogin profiles use <profile_name>]")
+			fmt.Println("No active profile detected. Authenticating with environment variables")
+			clientConfig.ClientID = os.Getenv("ONELOGIN_CLIENT_ID")
+			clientConfig.ClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
+			clientConfig.Url = os.Getenv("ONELOGIN_OAPI_URL")
+		} else {
+			fmt.Println("Using profile", activeProfile["name"].(string))
+			clientConfig.ClientID = activeProfile["client_id"].(string)
+			clientConfig.ClientSecret = activeProfile["client_secret"].(string)
+			clientConfig.Url = fmt.Sprintf("https://api.%s.onelogin.com", activeProfile["region"].(string))
 		}
 	}
-	oneloginClient, err := client.NewClient(&client.APIClientConfig{
-		Timeout:      5,
-		ClientID:     activeProfile["client_id"].(string),
-		ClientSecret: activeProfile["client_secret"].(string),
-		Url:          fmt.Sprintf("https://api.%s.onelogin.com", activeProfile["region"].(string)),
-	})
+	oneloginClient, err := client.NewClient(&clientConfig)
 	if err != nil {
 		log.Fatalln("Unable to connect to remote!", err)
 	}
