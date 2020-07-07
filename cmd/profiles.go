@@ -68,12 +68,12 @@ func init() {
 		and facilitates creating, changing, deleting, indexing, and using known configurations.
 		You are of course, free to go and edit the profiles file yourself and use this as a way to quickly switch out your environment.
 		Available Actions:
-			use             [name - required] => marks this profile as active so the CLI will use it's credentials in all requests to OneLogin
+			use             [name - required] => CLI will use this profile's credentials in all requests to OneLogin
 			show            [name - required] => shows information about the profile
-			edit   (update) [name - required] => edits selected account information
-			remove (delete) [name - required] => removes selected account
-			add    (create) [name - required] => adds account to manage
-			list   (ls)                       => lists managed accounts that can be used. if name given, lists information about that profile
+			edit   (update) [name - required] => edits selected profile information
+			remove (delete) [name - required] => removes selected profile
+			add    (create) [name - required] => adds profile to manage
+			list   (ls)     [name - optional] => lists managed profile that can be used. if name given, lists information about that profile
 			which  (current)                  => returns current active profile`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {

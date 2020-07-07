@@ -9,6 +9,11 @@ import (
 	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
+type AppQuerier interface {
+	Query(query *apps.AppsQuery) ([]apps.App, error)
+	GetOne(id int32) (*apps.App, error)
+}
+
 type OneloginAppsImportable struct {
 	AppType  string
 	SearchID string
