@@ -8,6 +8,11 @@ import (
 	"strconv"
 )
 
+type UserMappingQuerier interface {
+	Query(query *usermappings.UserMappingsQuery) ([]usermappings.UserMapping, error)
+	GetOne(id int32) (*usermappings.UserMapping, error)
+}
+
 type OneloginUserMappingsImportable struct {
 	Service  UserMappingQuerier
 	SearchID string
@@ -16,7 +21,6 @@ type OneloginUserMappingsImportable struct {
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
 func (i OneloginUserMappingsImportable) ImportFromRemote() []ResourceDefinition {
-	fmt.Println("Collecting User Mappings from OneLogin...")
 	var remoteUserMappings []usermappings.UserMapping
 	if i.SearchID == "" {
 		fmt.Println("Collecting User Mappings from OneLogin...")

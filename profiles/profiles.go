@@ -23,6 +23,16 @@ type Profile struct {
 	ClientSecret string `json:"client_secret"`
 }
 
+func (p ProfileService) GetActive() *Profile {
+	profiles := p.Index()
+	for _, prof := range profiles {
+		if (*prof).Active == true {
+			return prof
+		}
+	}
+	return nil
+}
+
 func (p ProfileService) Activate(name string) {
 	profiles := p.Index()
 	for n, prof := range profiles {
