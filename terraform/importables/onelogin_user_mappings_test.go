@@ -45,32 +45,9 @@ func (svc MockUserMappingService) GetOne(id int32) (*usermappings.UserMapping, e
 	return &usermappings.UserMapping{Name: oltypes.String("test2"), ID: oltypes.Int32(2)}, nil
 }
 
-func TestGetAll(t *testing.T) {
-	tests := map[string]struct {
-		Importable OneloginUserMappingsImportable
-		Service    UserMappingQuerier
-		Expected   []usermappings.UserMapping
-	}{
-		"It pulls all user mappings": {
-			Importable: OneloginUserMappingsImportable{},
-			Service:    MockUserMappingService{},
-			Expected: []usermappings.UserMapping{
-				usermappings.UserMapping{Name: oltypes.String("test2"), ID: oltypes.Int32(2)},
-			},
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := test.Importable.GetAll(test.Service)
-			assert.Equal(t, test.Expected, actual)
-		})
-	}
-}
-
 func TestImportUserMappingFromRemote(t *testing.T) {
 	tests := map[string]struct {
 		Importable OneloginUserMappingsImportable
-		Service    UserMappingQuerier
 		Expected   []ResourceDefinition
 	}{
 		"It pulls all apps of a certain type": {

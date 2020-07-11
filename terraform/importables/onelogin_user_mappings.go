@@ -24,7 +24,7 @@ func (i OneloginUserMappingsImportable) ImportFromRemote() []ResourceDefinition 
 	var remoteUserMappings []usermappings.UserMapping
 	if i.SearchID == "" {
 		fmt.Println("Collecting User Mappings from OneLogin...")
-		remoteUserMappings = i.GetAll(i.Service)
+		remoteUserMappings = i.getOneLoginUserMappings()
 	} else {
 		fmt.Printf("Collecting User Mapping %s from OneLogin...\n", i.SearchID)
 		id, err := strconv.Atoi(i.SearchID)
@@ -54,8 +54,8 @@ func assembleUserMappingResourceDefinitions(allUserMappings []usermappings.UserM
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginUserMappingsImportable) GetAll(userMappingsService UserMappingQuerier) []usermappings.UserMapping {
-	um, err := userMappingsService.Query(&usermappings.UserMappingsQuery{})
+func (i OneloginUserMappingsImportable) getOneLoginUserMappings() []usermappings.UserMapping {
+	um, err := i.Service.Query(&usermappings.UserMappingsQuery{})
 	if err != nil {
 		log.Fatal("error retrieving apps ", err)
 	}

@@ -26,7 +26,7 @@ func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
 	var remoteApps []apps.App
 	if i.SearchID == "" {
 		fmt.Println("Collecting Apps from OneLogin...")
-		remoteApps = i.GetAllApps(i.Service)
+		remoteApps = i.getOneLoginAppsApps()
 	} else {
 		fmt.Printf("Collecting App %s from OneLogin...\n", i.SearchID)
 		id, err := strconv.Atoi(i.SearchID)
@@ -63,7 +63,7 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
+func (i OneloginAppsImportable) getOneLoginAppsApps() []apps.App {
 
 	appTypeQueryMap := map[string]string{
 		"onelogin_apps":      "",
@@ -72,7 +72,7 @@ func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
 	}
 	requestedAppType := appTypeQueryMap[i.AppType]
 
-	appApps, err := appsService.Query(&apps.AppsQuery{
+	appApps, err := i.Service.Query(&apps.AppsQuery{
 		AuthMethod: requestedAppType,
 	})
 	if err != nil {

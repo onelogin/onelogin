@@ -45,32 +45,9 @@ func (svc MockAppsService) GetOne(id int32) (*apps.App, error) {
 	return &apps.App{Name: oltypes.String("test2"), AuthMethod: oltypes.Int32(2), ID: oltypes.Int32(2)}, nil
 }
 
-func TestGetAllApps(t *testing.T) {
-	tests := map[string]struct {
-		Importable OneloginAppsImportable
-		Service    AppQuerier
-		Expected   []apps.App
-	}{
-		"It pulls all apps of a certain type": {
-			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps"},
-			Service:    MockAppsService{},
-			Expected: []apps.App{
-				apps.App{Name: oltypes.String("test2"), AuthMethod: oltypes.Int32(2), ID: oltypes.Int32(2)},
-			},
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := test.Importable.GetAllApps(test.Service)
-			assert.Equal(t, test.Expected, actual)
-		})
-	}
-}
-
 func TestImportAppFromRemote(t *testing.T) {
 	tests := map[string]struct {
 		Importable OneloginAppsImportable
-		Service    AppQuerier
 		Expected   []ResourceDefinition
 	}{
 		"It pulls all apps of a certain type": {
