@@ -38,12 +38,12 @@ func (i OneloginAppsImportable) ImportFromRemote(searchId *string) []ResourceDef
 		}
 		remoteApps = []apps.App{*app}
 	}
-	resourceDefinitions := assembleResourceDefinitions(remoteApps)
+	resourceDefinitions := assembleOneLoginResourceDefinitions(remoteApps)
 	return resourceDefinitions
 }
 
 // helper for packing apps into ResourceDefinitions
-func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
+func assembleOneLoginResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, app := range allApps {
 		resourceDefinition := ResourceDefinition{
