@@ -49,9 +49,6 @@ func (i OktaAppsImportable) getAllApps() []okta.App {
 		fmt.Println("ERROR", err)
 		fmt.Println("RESP", resp)
 	}
-	for _, a := range apps {
-		fmt.Println(a.(*okta.Application).SignOnMode)
-	}
 	return apps
 }
 

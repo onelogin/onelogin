@@ -87,7 +87,7 @@ func init() {
 			if err != nil {
 				log.Println("[Warning] Unable to connect to OneLogin!", err)
 			}
-			_, oktaClient, err := okta.NewClient(context.TODO(), okta.WithOrgUrl("https://dev-467572.oktapreview.com"), okta.WithToken("00_kXZMY3spHbInbJK0oG1s97FLZfODe4miQKvQNwI"))
+			_, oktaClient, err := okta.NewClient(context.TODO(), okta.WithOrgUrl(fmt.Sprintf("https://%s.%s", os.Getenv("OKTA_ORG_NAME"), os.Getenv("OKTA_BASE_URL"))), okta.WithToken(os.Getenv("OKTA_API_TOKEN")))
 			if err != nil {
 				log.Println("[Warning] Unable to connect to Okta!", err)
 			}
