@@ -11,10 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/onelogin/onelogin-go-sdk/pkg/client"
-	"github.com/onelogin/onelogin/profiles"
 	"github.com/onelogin/onelogin/terraform/import"
-
 	"github.com/onelogin/onelogin/terraform/importables"
 
 	"github.com/spf13/cobra"
@@ -23,9 +20,8 @@ import (
 
 func init() {
 	var (
-		autoApprove    *bool
-		searchId       *string
-		profileService profiles.ProfileService
+		autoApprove *bool
+		searchId    *string
 	)
 	var convertCommand = &cobra.Command{
 		Use:   "convert [source] [destination]",
@@ -42,24 +38,9 @@ func init() {
 				configFile.Close()
 				log.Fatalln("Unable to open profiles file", err)
 			}
-			profileService = profiles.ProfileService{Repository: profiles.FileRepository{StorageMedia: configFile}}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			clientConfig := client.APIClientConfig{Timeout: 5}
-			profile := profileService.GetActive()
-			if profile == nil {
-				fmt.Println("No active profile detected. Authenticating with environment variables")
-				clientConfig.ClientID = os.Getenv("ONELOGIN_CLIENT_ID")
-				clientConfig.ClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
-				clientConfig.Url = os.Getenv("ONELOGIN_OAPI_URL")
-			} else {
-				fmt.Println("Using profile", (*profile).Name)
-				clientConfig.ClientID = (*profile).ClientID
-				clientConfig.ClientSecret = (*profile).ClientSecret
-				clientConfig.Url = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
-			}
-
 			_, oktaClient, err := okta.NewClient(context.TODO(), okta.WithOrgUrl(fmt.Sprintf("https://%s.%s", os.Getenv("OKTA_ORG_NAME"), os.Getenv("OKTA_BASE_URL"))), okta.WithToken(os.Getenv("OKTA_API_TOKEN")))
 			if err != nil {
 				log.Println("[Warning] Unable to connect to Okta!", err)
