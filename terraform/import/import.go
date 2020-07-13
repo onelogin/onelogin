@@ -13,8 +13,12 @@ import (
 var providerRegex *regexp.Regexp = regexp.MustCompile(`^\s*?source\s?=\s?"[a-zA-Z]+\/[a-zA-Z]+"?`)
 var resourceRegex *regexp.Regexp = regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z0-9\_\-]*[0-9]*)\s?\{`)
 
-func providerFromRegexMatches(matches []string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(strings.Split(matches[0], "=")[1], "\"", ""), " ", "")
+// Terraform resource representation
+type StateResource struct {
+	Name      string             `json:"name"`
+	Type      string             `json:"type"`
+	Provider  string             `json:"provider"`
+	Instances []ResourceInstance `json:"instances"`
 }
 
 func resourceFromRegexMatches(matches []string) string {
