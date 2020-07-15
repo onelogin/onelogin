@@ -65,6 +65,9 @@ func init() {
 
 func convert(importable tfimportables.Importable, args []string, autoApprove bool) {
 	// create a main.tf file
+	os.Mkdir("src", 0777)
+	os.Mkdir("dst", 0777)
+	os.Chdir("src")
 	p := filepath.Join("main.tf")
 	planFile, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
@@ -76,7 +79,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 	providerDefinitions := []string{"okta"} // good enough for hackathon lol
 	// ask for permission
 	if autoApprove == false {
-		fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(resourceDefinitions))
+		fmt.Printf("This will convert %d okta resources to onelogin. Do you want to continue? (y/n): ", len(resourceDefinitions))
 		input := bufio.NewScanner(os.Stdin)
 		input.Scan()
 		text := strings.ToLower(input.Text())
@@ -95,7 +98,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 		log.Fatal("Problem creating import file", err)
 	}
 
-	log.Println("Initializing Terraform with 'terraform init'...")
+	log.Println("Initializing Source Terraform with 'terraform init'...")
 	// #nosec G204
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		if err := planFile.Close(); err != nil {
@@ -105,6 +108,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 	}
 
 	// import each resource with terraform import
+
 	for i, resourceDefinition := range resourceDefinitions {
 		arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
 		pos := strings.Index(arg1, "-")
@@ -124,18 +128,46 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 		log.Fatalln("Unable to collect state from tfstate")
 	}
 
-	buffer := tfimport.ConvertTFStateToDestinationHCL(state, importable)
+	buffer := tfimport.ConvertTFStateToHCL(state, importable)
 
-	// go to the start of main.tf and overwrite whole file
 	planFile.Seek(0, 0)
+	_, err = planFile.Write(buffer)
+	if err != nil {
+		planFile.Close()
+		fmt.Println("ERROR Writing Src main.tf", err)
+	}
+	planFile.Close()
+
+	buffer = tfimport.ConvertTFStateToDestinationHCL(state, importable)
+	os.Chdir("../dst")
+	p = filepath.Join("main.tf")
+	planFile, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatalln("Unable to open main.tf ", err)
+	}
+	// go to the start of main.tf and overwrite whole file
 	_, err = planFile.Write(buffer)
 	if err != nil {
 		planFile.Close()
 		fmt.Println("ERROR Writing Final main.tf", err)
 	}
 
+	log.Println("Initializing Destination Terraform with 'terraform init'...")
+	// #nosec G204
+	if err := exec.Command("terraform", "init").Run(); err != nil {
+		if err := planFile.Close(); err != nil {
+			log.Fatal("Problem writing to main.tf", err)
+		}
+		log.Fatal("Problem executing terraform init", err)
+	}
+
+	log.Println("Applying Destination Terraform with 'terraform apply'...")
+	// #nosec G204
+	if err := exec.Command("terraform", "apply", "-auto-approve").Run(); err != nil {
+		log.Fatalln("Problem executing terraform apply", err)
+	}
+
 	if err := planFile.Close(); err != nil {
 		fmt.Println("Problem writing file", err)
 	}
-
 }
