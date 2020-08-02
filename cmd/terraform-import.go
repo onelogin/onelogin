@@ -1,27 +1,28 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"strings"
 	"bufio"
-	"os/exec"
-	"path/filepath"
+	"encoding/json"
+	"fmt"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
-	"github.com/onelogin/onelogin/terraform/import"
 	"github.com/onelogin/onelogin/profiles"
-
+	"github.com/onelogin/onelogin/terraform/import"
 	"github.com/onelogin/onelogin/terraform/importables"
-
+	"github.com/onelogin/onelogin/terraform/state_parser"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 func init() {
 	var (
-		autoApprove *bool
-		searchId *string
+		autoApprove    *bool
+		searchId       *string
 		profileService profiles.ProfileService
 	)
 	var tfImportCommand = &cobra.Command{
@@ -45,7 +46,7 @@ func init() {
 			profileService = profiles.ProfileService{Repository: profiles.FileRepository{StorageMedia: configFile}}
 			return nil
 		},
-		Run:  func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, args []string) {
 			clientConfig := client.APIClientConfig{Timeout: 5}
 			profile := profileService.GetActive()
 			if profile == nil {
@@ -102,7 +103,7 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 		os.Exit(0)
 	}
 
-	if autoApprove == false{
+	if autoApprove == false {
 		fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(newResourceDefinitions))
 		input := bufio.NewScanner(os.Stdin)
 		input.Scan()
@@ -143,13 +144,19 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 	}
 
 	// grab the state from tfstate
-	state, err := tfimport.CollectState()
+	state := stateparser.State{}
+	log.Println("Collecting State from tfstate File")
+	data, err := ioutil.ReadFile(filepath.Join("terraform.tfstate"))
 	if err != nil {
 		planFile.Close()
-		log.Fatalln("Unable to collect state from tfstate")
+		log.Fatalln("Unable to Read tfstate", err)
+	}
+	if err := json.Unmarshal(data, &state); err != nil {
+		planFile.Close()
+		log.Fatalln("Unable to Translate tfstate in Memory", err)
 	}
 
-	buffer := tfimport.ConvertTFStateToHCL(state, importable)
+	buffer := stateparser.ConvertTFStateToHCL(state, importable)
 
 	// go to the start of main.tf and overwrite whole file
 	planFile.Seek(0, 0)
