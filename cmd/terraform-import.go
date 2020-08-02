@@ -90,8 +90,7 @@ func init() {
 }
 
 func tfImport(importable tfimportables.Importable, args []string, autoApprove bool) {
-	p := filepath.Join("main.tf")
-	planFile, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+	planFile, err := os.OpenFile(filepath.Join("main.tf"), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
