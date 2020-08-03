@@ -66,6 +66,7 @@ func init() {
 			}
 			// initalize other clients to inject into respective importable services here
 			importables := map[string]tfimportables.Importable{
+				"onelogin_users":         tfimportables.OneloginUsersImportable{Service: oneloginClient.Services.UsersV2, SearchID: *searchId},
 				"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId},
 				"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_saml_apps"},
 				"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_oidc_apps"},
