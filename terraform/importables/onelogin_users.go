@@ -53,8 +53,13 @@ func (i OneloginUsersImportable) ImportFromRemote() []ResourceDefinition {
 	return resourceDefinitions
 }
 
-func (i OneloginUsersImportable) HCLShape() interface{} {
-	return &UserData{}
+func (i OneloginUsersImportable) HCLShape(outHCLShapeOption string) interface{} {
+	switch outHCLShapeOption {
+	case "aws_users":
+		return &UserData{}
+	default:
+		return &UserData{}
+	}
 }
 
 // the underlying data that represents the resource from the remote in terraform.

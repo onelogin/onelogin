@@ -38,7 +38,7 @@ func TestConvertTFStateToHCL(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := ConvertTFStateToHCL(test.InputState, tfimportables.OneloginAppsImportable{})
+			actual := ConvertTFStateToHCL(test.InputState, tfimportables.OneloginAppsImportable{}, "")
 			assert.Equal(t, len(test.ExpectedOutput), len(string(actual)))
 		})
 	}

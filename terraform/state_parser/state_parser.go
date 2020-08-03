@@ -31,7 +31,7 @@ type ResourceInstance struct {
 
 // takes the tfstate representations formats them as HCL and writes them to a bytes buffer
 // so it can be flushed into main.tf
-func ConvertTFStateToHCL(state State, importable tfimportables.Importable) []byte {
+func ConvertTFStateToHCL(state State, importable tfimportables.Importable, outHCLShapeOption string) []byte {
 	var builder strings.Builder
 	knownProviders := map[string]int{}
 
@@ -47,7 +47,7 @@ func ConvertTFStateToHCL(state State, importable tfimportables.Importable) []byt
 			builder.WriteString(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))
 			builder.WriteString(fmt.Sprintf("\tprovider = %s\n", providerDefinition))
 			b, _ := json.Marshal(instance.Data)
-			hclShape := importable.HCLShape()
+			hclShape := importable.HCLShape(outHCLShapeOption)
 			json.Unmarshal(b, hclShape)
 			convertToHCLLine(hclShape, 1, &builder)
 			builder.WriteString("}\n\n")

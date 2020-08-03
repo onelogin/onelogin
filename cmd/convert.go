@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin/profiles"
 	"github.com/onelogin/onelogin/terraform/import"
@@ -63,8 +66,13 @@ func init() {
 				log.Println("[Warning] Unable to connect to OneLogin!", err)
 			}
 
+			sess, err := session.NewSession(&aws.Config{Region: aws.String("us-west-2")})
+			if err != nil {
+				log.Fatalln("There was a problem connecting to AWS", err)
+			}
+
 			availableSources := map[string]tfimportables.Importable{
-				"aws_users":      tfimportables.AWSUsersImportable{},
+				"aws_users":      tfimportables.AWSUsersImportable{Service: iam.New(sess)},
 				"onelogin_users": tfimportables.OneloginUsersImportable{Service: oneloginClient.Services.UsersV2, SearchID: *searchId},
 			}
 			source, ok := availableSources[strings.ToLower(args[0])]
@@ -97,7 +105,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 
 	// call out for source resoruces
 	resourceDefinitions := importable.ImportFromRemote()
-	providerDefinitions := []string{"okta"} // good enough for hackathon lol
+	providerDefinitions := []string{"aws"} // good enough for hackathon lol
 	// ask for permission
 	if autoApprove == false {
 		fmt.Printf("This will convert %d okta resources to onelogin. Do you want to continue? (y/n): ", len(resourceDefinitions))
@@ -113,7 +121,6 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 		}
 	}
 
-	// adds resource headers to main.tf e.g. resource okta_saml_apps okta_saml_apps-1234 {}
 	if err := tfimport.WriteHCLDefinitionHeaders(resourceDefinitions, providerDefinitions, planFile); err != nil {
 		planFile.Close()
 		log.Fatal("Problem creating import file", err)
@@ -154,7 +161,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 		log.Fatalln("Unable to Translate tfstate in Memory", err)
 	}
 
-	buffer := stateparser.ConvertTFStateToHCL(state, importable)
+	buffer := stateparser.ConvertTFStateToHCL(state, importable, "")
 
 	planFile.Seek(0, 0)
 	_, err = planFile.Write(buffer)
@@ -164,7 +171,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 	}
 	planFile.Close()
 
-	// buffer = tfimport.ConvertTFStateToDestinationHCL(state, importable)
+	buffer = stateparser.ConvertTFStateToHCL(state, importable, strings.ToLower(args[1]))
 	os.Chdir("../dst")
 	p = filepath.Join("main.tf")
 	planFile, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
@@ -178,22 +185,4 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 		fmt.Println("ERROR Writing Final main.tf", err)
 	}
 
-	log.Println("Initializing Destination Terraform with 'terraform init'...")
-	// #nosec G204
-	if err := exec.Command("terraform", "init").Run(); err != nil {
-		if err := planFile.Close(); err != nil {
-			log.Fatal("Problem writing to main.tf", err)
-		}
-		log.Fatal("Problem executing terraform init", err)
-	}
-
-	log.Println("Applying Destination Terraform with 'terraform apply'...")
-	// #nosec G204
-	if err := exec.Command("terraform", "apply", "-auto-approve").Run(); err != nil {
-		log.Fatalln("Problem executing terraform apply", err)
-	}
-
-	if err := planFile.Close(); err != nil {
-		fmt.Println("Problem writing file", err)
-	}
 }

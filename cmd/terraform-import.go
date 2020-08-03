@@ -163,7 +163,7 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 		log.Fatalln("Unable to Translate tfstate in Memory", err)
 	}
 
-	buffer := stateparser.ConvertTFStateToHCL(state, importable)
+	buffer := stateparser.ConvertTFStateToHCL(state, importable, "")
 
 	// go to the start of main.tf and overwrite whole file
 	planFile.Seek(0, 0)
