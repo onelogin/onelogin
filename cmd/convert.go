@@ -94,11 +94,11 @@ func init() {
 }
 
 func convert(importable tfimportables.Importable, args []string, autoApprove bool) {
-	os.Mkdir("src", 0777)
-	os.Mkdir("dst", 0777)
+	os.Mkdir("src", 0600)
+	os.Mkdir("dst", 0600)
 	os.Chdir("src")
-	p := filepath.Join("main.tf")
-	planFile, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+
+	planFile, err := os.OpenFile(filepath.Join("main.tf"), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
@@ -173,8 +173,7 @@ func convert(importable tfimportables.Importable, args []string, autoApprove boo
 
 	buffer = stateparser.ConvertTFStateToHCL(state, importable, strings.ToLower(args[1]))
 	os.Chdir("../dst")
-	p = filepath.Join("main.tf")
-	planFile, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+	planFile, err = os.OpenFile(filepath.Join("main.tf"), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
