@@ -12,40 +12,25 @@ import (
 // compares incoming resources from remote to what is already defined in the main.tf
 // file to prevent duplicate definitions which breaks terraform import
 func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
-<<<<<<< HEAD
 	resourceDefinitionsToImport := []tfimportables.ResourceDefinition{} // resource definitions not in HCL file that were included in incoming resources
 	unspecifiedProviders := []string{}                                  // providers not already in HCL file from which to import new resources
 
-=======
->>>>>>> changes resource definition filter so it accepts array of incomming resource definitions, rather than an importable
 	// resource definition headers in HCL file like resource onelogin_apps cool_app {}
 	searchCriteria := map[string]*regexp.Regexp{
 		"provider": regexp.MustCompile(`(\w*provider\w*)\s(([a-zA-Z\_]*))\s\{`),
 		"resource": regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`),
 	}
 
-<<<<<<< HEAD
 	// running tab of provider and resource definitions in HCL file
 	definitionHeaderCounter := map[string]map[string]int{
 		"provider": map[string]int{},
 		"resource": map[string]int{},
 	}
-=======
-	definitionHeaderCounter := make(map[string]map[string]int)          // running tab of provider and resource definitions in HCL file
-	resourceDefinitionsToImport := []tfimportables.ResourceDefinition{} // resource definitions not in HCL file that were included in incoming resources
-	unspecifiedProviders := []string{}                                  // providers not already in HCL file from which to import new resources
->>>>>>> changes resource definition filter so it accepts array of incomming resource definitions, rather than an importable
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		t := scanner.Text()
 		for regexName, r := range searchCriteria {
-<<<<<<< HEAD
-=======
-			if definitionHeaderCounter[regexName] == nil {
-				definitionHeaderCounter[regexName] = make(map[string]int)
-			}
->>>>>>> changes resource definition filter so it accepts array of incomming resource definitions, rather than an importable
 			definitionHeaderLine := r.FindStringSubmatch(t)
 			if len(definitionHeaderLine) > 0 {
 				var definitionKey string
