@@ -26,6 +26,7 @@ func (i AWSUsersImportable) ImportFromRemote() []ResourceDefinition {
 			Provider: "aws",
 			Type:     "aws_iam_user",
 			Name:     *u.UserName,
+			ImportID: *u.UserName,
 		}
 	}
 	return out

@@ -140,11 +140,10 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 	}
 
 	for i, resourceDefinition := range newResourceDefinitions {
-		arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
-		pos := strings.Index(arg1, "-")
-		id := arg1[pos+1 : len(arg1)]
+		resourceName := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
+		id := resourceDefinition.ImportID
 		// #nosec G204
-		cmd := exec.Command("terraform", "import", arg1, id)
+		cmd := exec.Command("terraform", "import", resourceName, id)
 		log.Printf("Importing resource %d", i+1)
 		if err := cmd.Run(); err != nil {
 			log.Fatal("Problem executing terraform import", cmd.Args, err)
