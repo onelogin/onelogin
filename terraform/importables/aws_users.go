@@ -31,7 +31,7 @@ func (i AWSUsersImportable) ImportFromRemote() []ResourceDefinition {
 	return out
 }
 
-func (i AWSUsersImportable) HCLShape(outHCLShapeOption string) interface{} {
+func (i AWSUsersImportable) HCLShape() interface{} {
 	return &AWSUserData{}
 }
 

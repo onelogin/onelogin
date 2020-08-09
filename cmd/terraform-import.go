@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin/profiles"
 	"github.com/onelogin/onelogin/terraform/import"
@@ -64,8 +67,13 @@ func init() {
 			if err != nil {
 				log.Println("[Warning] Unable to connect to OneLogin!", err)
 			}
+			sess, err := session.NewSession(&aws.Config{Region: aws.String("us-west-2")})
+			if err != nil {
+				log.Fatalln("There was a problem connecting to AWS. Ensure your AWS credentials are exported to your environment", err)
+			}
 			// initalize other clients to inject into respective importable services here
 			importables := map[string]tfimportables.Importable{
+				"aws_users":              tfimportables.AWSUsersImportable{Service: iam.New(sess)},
 				"onelogin_users":         tfimportables.OneloginUsersImportable{Service: oneloginClient.Services.UsersV2, SearchID: *searchId},
 				"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId},
 				"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_saml_apps"},
