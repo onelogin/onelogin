@@ -11,13 +11,13 @@ type MockUsersService struct{}
 
 func (svc MockUsersService) Query(query *users.UserQuery) ([]users.User, error) {
 	return []users.User{
-		users.User{Username: oltypes.String("test_1"), Email: oltypes.String("test_1@test.test"), ID: oltypes.Int32(1)},
-		users.User{Username: oltypes.String("test_2"), Email: oltypes.String("test_2@test.test"), ID: oltypes.Int32(2)},
+		users.User{Username: oltypes.String("test_1"), Email: oltypes.String("test_1@test.com"), ID: oltypes.Int32(1)},
+		users.User{Username: oltypes.String("test_2"), Email: oltypes.String("test_2@test.com"), ID: oltypes.Int32(2)},
 	}, nil
 }
 
 func (svc MockUsersService) GetOne(id int32) (*users.User, error) {
-	return &users.User{Username: oltypes.String("test"), Email: oltypes.String("test@test.test"), ID: oltypes.Int32(1)}, nil
+	return &users.User{Username: oltypes.String("test"), Email: oltypes.String("test@test.com"), ID: oltypes.Int32(1)}, nil
 }
 
 func TestImportUserFromRemote(t *testing.T) {
@@ -28,14 +28,14 @@ func TestImportUserFromRemote(t *testing.T) {
 		"It pulls all apps of a certain type": {
 			Importable: OneloginUsersImportable{Service: MockUsersService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "onelogin_users-1", Type: "onelogin_users"},
-				ResourceDefinition{Provider: "onelogin", Name: "onelogin_users-2", Type: "onelogin_users"},
+				ResourceDefinition{Provider: "onelogin", Name: "test_1_test_com", ImportID: "1", Type: "onelogin_users"},
+				ResourceDefinition{Provider: "onelogin", Name: "test_2_test_com", ImportID: "2", Type: "onelogin_users"},
 			},
 		},
 		"It gets one app": {
 			Importable: OneloginUsersImportable{Service: MockUsersService{}, SearchID: "1"},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "onelogin_users-1", Type: "onelogin_users"},
+				ResourceDefinition{Provider: "onelogin", Name: "test_test_com", ImportID: "1", Type: "onelogin_users"},
 			},
 		},
 	}

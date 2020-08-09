@@ -45,10 +45,12 @@ func (i OneloginUserMappingsImportable) ImportFromRemote() []ResourceDefinition 
 func assembleUserMappingResourceDefinitions(allUserMappings []usermappings.UserMapping) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allUserMappings))
 	for i, userMapping := range allUserMappings {
-		resourceDefinition := ResourceDefinition{Provider: "onelogin"}
-		resourceDefinition.Type = "onelogin_user_mappings"
-		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*userMapping.Name, "")), *userMapping.ID)
-		resourceDefinitions[i] = resourceDefinition
+		resourceDefinitions[i] = ResourceDefinition{
+			Provider: "onelogin",
+			Type:     "onelogin_user_mappings",
+			ImportID: fmt.Sprintf("%d", *userMapping.ID),
+			Name:     utils.ReplaceSpecialChar(*userMapping.Name, ""),
+		}
 	}
 	return resourceDefinitions
 }

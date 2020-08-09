@@ -103,8 +103,8 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
-
-	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(planFile, importable)
+	resourceDefinitionsFromRemote := importable.ImportFromRemote()
+	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(planFile, resourceDefinitionsFromRemote)
 	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
 		planFile.Close()

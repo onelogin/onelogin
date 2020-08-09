@@ -2,10 +2,10 @@ package tfimportables
 
 import (
 	"fmt"
+	"github.com/onelogin/onelogin-go-sdk/pkg/services/users"
+	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 	"log"
 	"strconv"
-
-	"github.com/onelogin/onelogin-go-sdk/pkg/services/users"
 )
 
 type UserQuerier interface {
@@ -43,9 +43,12 @@ func (i OneloginUsersImportable) ImportFromRemote() []ResourceDefinition {
 	}
 	resourceDefinitions := make([]ResourceDefinition, len(out))
 	for i, rd := range out {
-		resourceDefinition := ResourceDefinition{Provider: "onelogin", Type: "onelogin_users"}
-		resourceDefinition.Name = fmt.Sprintf("onelogin_users-%d", *rd.ID)
-		resourceDefinitions[i] = resourceDefinition
+		resourceDefinitions[i] = ResourceDefinition{
+			Provider: "onelogin",
+			Type:     "onelogin_users",
+			Name:     utils.ReplaceSpecialChar(*rd.Email, "_"),
+			ImportID: fmt.Sprintf("%d", *rd.ID),
+		}
 	}
 	return resourceDefinitions
 }
