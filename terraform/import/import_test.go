@@ -24,22 +24,10 @@ func (m *MockFile) Read(p []byte) (int, error) {
 	return len(p), io.EOF
 }
 
-type MockImportable struct {
-	InputResourceDefinitions []tfimportables.ResourceDefinition
-}
-
-func (mi MockImportable) ImportFromRemote() []tfimportables.ResourceDefinition {
-	return mi.InputResourceDefinitions
-}
-
-func (mi MockImportable) HCLShape() interface{} {
-	return nil
-}
-
 func TestFilterExistingDefinitions(t *testing.T) {
 	tests := map[string]struct {
 		InputReadWriter             io.Reader
-		Importable                  MockImportable
+		IncomingResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedProviders           []string
 	}{
@@ -48,27 +36,36 @@ func TestFilterExistingDefinitions(t *testing.T) {
 				resource onelogin_apps defined_in_main_already {
 					name = defined_in_main_already
 				}
+				resource okra_saml_apps test_defined_already {
+					name = test_defined_already
+				}
 				provider onelogin {
 					alias "onelogin"
 				}
+				provider okra {
+					alias "okra"
+				}
 			`),
-			Importable: MockImportable{InputResourceDefinitions: []tfimportables.ResourceDefinition{
+			IncomingResourceDefinitions: []tfimportables.ResourceDefinition{
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "defined_in_main_already", Type: "onelogin_apps"},
+				tfimportables.ResourceDefinition{Provider: "okra", Name: "test_defined_already", Type: "okra_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "new_resource", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "test", Type: "onelogin_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "okra", Name: "test", Type: "okra_saml_apps"},
-			}},
+				tfimportables.ResourceDefinition{Provider: "aws", Name: "test", Type: "aws_apps"},
+			},
 			ExpectedResourceDefinitions: []tfimportables.ResourceDefinition{
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "new_resource", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "test", Type: "onelogin_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "okra", Name: "test", Type: "okra_saml_apps"},
+				tfimportables.ResourceDefinition{Provider: "aws", Name: "test", Type: "aws_apps"},
 			},
-			ExpectedProviders: []string{"okra"},
+			ExpectedProviders: []string{"aws"},
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualResourceDefinitions, actualProviderDefinitions := FilterExistingDefinitions(test.InputReadWriter, test.Importable)
+			actualResourceDefinitions, actualProviderDefinitions := FilterExistingDefinitions(test.InputReadWriter, test.IncomingResourceDefinitions)
 			assert.Equal(t, test.ExpectedResourceDefinitions, actualResourceDefinitions)
 			assert.Equal(t, test.ExpectedProviders, actualProviderDefinitions)
 		})
@@ -84,8 +81,8 @@ func TestAppendDefinitionsToMainTF(t *testing.T) {
 	}{
 		"it adds provider and resource to the writer": {
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Name: "test", Type: "test", Provider: "test"},
-				tfimportables.ResourceDefinition{Name: "test", Type: "test", Provider: "test2"},
+				tfimportables.ResourceDefinition{Name: "test", Type: "test", ImportID: "test", Provider: "test"},
+				tfimportables.ResourceDefinition{Name: "test", Type: "test", ImportID: "test", Provider: "test2"},
 			},
 			TestFile:                 MockFile{},
 			InputProviderDefinitions: []string{"test", "test2"},

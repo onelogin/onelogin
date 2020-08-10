@@ -19,9 +19,9 @@ func TestAssembleUserMappingResourceDefinitions(t *testing.T) {
 				usermappings.UserMapping{Name: oltypes.String("test3"), ID: oltypes.Int32(3)},
 			},
 			ExpectedOut: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_user_mappings", Name: "test1-1"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_user_mappings", Name: "test2-2"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_user_mappings", Name: "test3-3"},
+				ResourceDefinition{Provider: "onelogin", Type: "onelogin_user_mappings", ImportID: "1", Name: "test1"},
+				ResourceDefinition{Provider: "onelogin", Type: "onelogin_user_mappings", ImportID: "2", Name: "test2"},
+				ResourceDefinition{Provider: "onelogin", Type: "onelogin_user_mappings", ImportID: "3", Name: "test3"},
 			},
 		},
 	}
@@ -53,13 +53,13 @@ func TestImportUserMappingFromRemote(t *testing.T) {
 		"It pulls all apps of a certain type": {
 			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test2-2", Type: "onelogin_user_mappings"},
+				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
 			},
 		},
 		"It gets one app": {
 			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}, SearchID: "1"},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test2-2", Type: "onelogin_user_mappings"},
+				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
 			},
 		},
 	}

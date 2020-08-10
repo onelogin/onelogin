@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin/profiles"
 	"github.com/onelogin/onelogin/terraform/import"
@@ -64,8 +67,14 @@ func init() {
 			if err != nil {
 				log.Println("[Warning] Unable to connect to OneLogin!", err)
 			}
+			sess, err := session.NewSession(&aws.Config{Region: aws.String("us-west-2")})
+			if err != nil {
+				log.Fatalln("There was a problem connecting to AWS. Ensure your AWS credentials are exported to your environment", err)
+			}
 			// initalize other clients to inject into respective importable services here
 			importables := map[string]tfimportables.Importable{
+				"aws_users":              tfimportables.AWSUsersImportable{Service: iam.New(sess)},
+				"onelogin_users":         tfimportables.OneloginUsersImportable{Service: oneloginClient.Services.UsersV2, SearchID: *searchId},
 				"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId},
 				"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_saml_apps"},
 				"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_oidc_apps"},
@@ -94,8 +103,8 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
-
-	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(planFile, importable)
+	resourceDefinitionsFromRemote := importable.ImportFromRemote()
+	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(planFile, resourceDefinitionsFromRemote)
 	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
 		planFile.Close()
@@ -131,11 +140,10 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 	}
 
 	for i, resourceDefinition := range newResourceDefinitions {
-		arg1 := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
-		pos := strings.Index(arg1, "-")
-		id := arg1[pos+1 : len(arg1)]
+		resourceName := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
+		id := resourceDefinition.ImportID
 		// #nosec G204
-		cmd := exec.Command("terraform", "import", arg1, id)
+		cmd := exec.Command("terraform", "import", resourceName, id)
 		log.Printf("Importing resource %d", i+1)
 		if err := cmd.Run(); err != nil {
 			log.Fatal("Problem executing terraform import", cmd.Args, err)
