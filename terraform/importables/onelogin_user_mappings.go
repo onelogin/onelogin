@@ -64,11 +64,8 @@ func (i OneloginUserMappingsImportable) getOneLoginUserMappings() []usermappings
 	return um
 }
 
-func (i OneloginUserMappingsImportable) HCLShape(outHCLShapeOption string) interface{} {
-	switch outHCLShapeOption {
-	default:
-		return &UserMappingData{}
-	}
+func (i OneloginUserMappingsImportable) HCLShape() interface{} {
+	return &UserMappingData{}
 }
 
 // the underlying data that represents the resource from the remote in terraform.

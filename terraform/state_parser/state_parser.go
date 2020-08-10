@@ -47,7 +47,7 @@ func ConvertTFStateToHCL(state State, importable tfimportables.Importable, outHC
 			builder.WriteString(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))
 			builder.WriteString(fmt.Sprintf("\tprovider = %s\n", providerDefinition))
 			b, _ := json.Marshal(instance.Data)
-			hclShape := importable.HCLShape(outHCLShapeOption)
+			hclShape := importable.HCLShape()
 			json.Unmarshal(b, hclShape)
 			convertToHCLLine(hclShape, 1, &builder)
 			builder.WriteString("}\n\n")

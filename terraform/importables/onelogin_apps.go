@@ -80,11 +80,8 @@ func (i OneloginAppsImportable) getOneLoginAppsApps() []apps.App {
 	return appApps
 }
 
-func (i OneloginAppsImportable) HCLShape(outHCLShapeOption string) interface{} {
-	switch outHCLShapeOption {
-	default:
-		return &AppData{}
-	}
+func (i OneloginAppsImportable) HCLShape() interface{} {
+	return &AppData{}
 }
 
 // the underlying data that represents the resource from the remote in terraform.
