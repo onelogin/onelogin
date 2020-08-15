@@ -15,7 +15,7 @@ type AWSUsersImportable struct {
 
 // Interface requirement to be an Importable. Calls out to remote (aws api) and
 // creates their Terraform ResourceDefinitions
-func (i AWSUsersImportable) ImportFromRemote() []ResourceDefinition {
+func (i AWSUsersImportable) ImportFromRemote(searchId *string) []ResourceDefinition {
 	usrs, err := i.Service.ListUsers(&iam.ListUsersInput{})
 	if err != nil {
 		log.Fatalln("There was a problem getting users", err)

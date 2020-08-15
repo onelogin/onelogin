@@ -14,26 +14,25 @@ type UserQuerier interface {
 }
 
 type OneloginUsersImportable struct {
-	SearchID string
-	Service  UserQuerier
+	Service UserQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
-func (i OneloginUsersImportable) ImportFromRemote() []ResourceDefinition {
+func (i OneloginUsersImportable) ImportFromRemote(searchId *string) []ResourceDefinition {
 	out := []users.User{}
 	var err error
-	if i.SearchID == "" {
+	if searchId == nil || *searchId == "" {
 		fmt.Println("Collecting Users from OneLogin...")
 		out, err = i.Service.Query(nil) // Todo, interface to pass these queries down
 		if err != nil {
 			log.Fatalln("Unable to get users", err)
 		}
 	} else {
-		fmt.Printf("Collecting User %s from OneLogin...\n", i.SearchID)
-		id, err := strconv.Atoi(i.SearchID)
+		fmt.Printf("Collecting User %s from OneLogin...\n", *searchId)
+		id, err := strconv.Atoi(*searchId)
 		if err != nil {
-			log.Fatalln("invalid input given for id", i.SearchID)
+			log.Fatalln("invalid input given for id", *searchId)
 		}
 		user, err := i.Service.GetOne(int32(id))
 		if err != nil {

@@ -14,23 +14,22 @@ type AppQuerier interface {
 }
 
 type OneloginAppsImportable struct {
-	AppType  string
-	SearchID string
-	Service  AppQuerier
+	AppType string
+	Service AppQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
-func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
+func (i OneloginAppsImportable) ImportFromRemote(searchId *string) []ResourceDefinition {
 	var remoteApps []apps.App
-	if i.SearchID == "" {
+	if searchId == nil || *searchId == "" {
 		fmt.Println("Collecting Apps from OneLogin...")
 		remoteApps = i.getOneLoginAppsApps()
 	} else {
-		fmt.Printf("Collecting App %s from OneLogin...\n", i.SearchID)
-		id, err := strconv.Atoi(i.SearchID)
+		fmt.Printf("Collecting App %s from OneLogin...\n", *searchId)
+		id, err := strconv.Atoi(*searchId)
 		if err != nil {
-			log.Fatalln("invalid input given for id", i.SearchID)
+			log.Fatalln("invalid input given for id", *searchId)
 		}
 		app, err := i.Service.GetOne(int32(id))
 		if err != nil {

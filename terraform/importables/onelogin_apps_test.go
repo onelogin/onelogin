@@ -47,6 +47,7 @@ func (svc MockAppsService) GetOne(id int32) (*apps.App, error) {
 
 func TestImportAppFromRemote(t *testing.T) {
 	tests := map[string]struct {
+		SearchID   *string
 		Importable OneloginAppsImportable
 		Expected   []ResourceDefinition
 	}{
@@ -57,7 +58,8 @@ func TestImportAppFromRemote(t *testing.T) {
 			},
 		},
 		"It gets one app": {
-			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}, SearchID: "1"},
+			SearchID:   oltypes.String("2"),
+			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}},
 			Expected: []ResourceDefinition{
 				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_saml_apps"},
 			},
@@ -65,7 +67,7 @@ func TestImportAppFromRemote(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := test.Importable.ImportFromRemote()
+			actual := test.Importable.ImportFromRemote(test.SearchID)
 			assert.Equal(t, test.Expected, actual)
 		})
 	}

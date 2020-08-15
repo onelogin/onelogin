@@ -33,7 +33,7 @@ func TestImportAWSUserFromRemote(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := test.Importable.ImportFromRemote()
+			actual := test.Importable.ImportFromRemote(nil)
 			assert.Equal(t, test.Expected, actual)
 		})
 	}

@@ -4,10 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/onelogin/onelogin-go-sdk/pkg/client"
+	"github.com/onelogin/onelogin/clients"
 	"github.com/onelogin/onelogin/profiles"
 	"github.com/onelogin/onelogin/terraform/import"
 	"github.com/onelogin/onelogin/terraform/importables"
@@ -24,86 +21,70 @@ import (
 
 func init() {
 	var (
-		autoApprove    *bool
-		searchId       *string
-		profileService profiles.ProfileService
+		autoApprove   *bool
+		searchID      *string
+		clientConfigs clients.ClientConfigs
 	)
 	var tfImportCommand = &cobra.Command{
 		Use:   "terraform-import",
 		Short: `Import resources to local Terraform state.`,
 		Long: `Uses Terraform Import to collect resources from a remote and
-		create new .tfstate and .tf files so you can
-		begin managing existing resources with Terraform.
+		create new .tfstate and .tf files so you can begin managing existing resources with Terraform.
 		Available Imports:
-			onelogin_apps          => all apps
-			onelogin_saml_apps     => SAML apps only
-			onelogin_oidc_apps     => OIDC apps only
-			onelogin_user_mappings => user mappings`,
+			onelogin_apps          => onelogin all apps
+			onelogin_saml_apps     => onelogin SAML apps only
+			onelogin_oidc_apps     => onelogin OIDC apps only
+			onelogin_user_mappings => onelogin user mappings
+			onelogin_users         => onelogin users
+			aws_iam_user           => aws users`,
 		Args: cobra.MinimumNArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRun: func(cmd *cobra.Command, args []string) {
 			configFile, err := os.OpenFile(viper.ConfigFileUsed(), os.O_RDWR, 0600)
 			if err != nil {
 				configFile.Close()
-				log.Fatalln("Unable to open profiles file", err)
+				log.Println("Unable to open profiles file. Falling back to Environment Variables", err)
 			}
-			profileService = profiles.ProfileService{Repository: profiles.FileRepository{StorageMedia: configFile}}
-			return nil
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-			clientConfig := client.APIClientConfig{Timeout: 5}
+			profileService := profiles.ProfileService{
+				Repository: profiles.FileRepository{
+					StorageMedia: configFile,
+				},
+			}
 			profile := profileService.GetActive()
+			clientConfigs = clients.ClientConfigs{
+				AwsRegion: os.Getenv("AWS_REGION"),
+			}
 			if profile == nil {
 				fmt.Println("No active profile detected. Authenticating with environment variables")
-				clientConfig.ClientID = os.Getenv("ONELOGIN_CLIENT_ID")
-				clientConfig.ClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
-				clientConfig.Url = os.Getenv("ONELOGIN_OAPI_URL")
+				clientConfigs.OneLoginClientID = os.Getenv("ONELOGIN_CLIENT_ID")
+				clientConfigs.OneLoginClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
+				clientConfigs.OneLoginURL = os.Getenv("ONELOGIN_OAPI_URL")
 			} else {
 				fmt.Println("Using profile", (*profile).Name)
-				clientConfig.ClientID = (*profile).ClientID
-				clientConfig.ClientSecret = (*profile).ClientSecret
-				clientConfig.Url = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
+				clientConfigs.OneLoginClientID = (*profile).ClientID
+				clientConfigs.OneLoginClientSecret = (*profile).ClientSecret
+				clientConfigs.OneLoginURL = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
 			}
-			oneloginClient, err := client.NewClient(&clientConfig)
-			if err != nil {
-				log.Println("[Warning] Unable to connect to OneLogin!", err)
-			}
-			sess, err := session.NewSession(&aws.Config{Region: aws.String("us-west-2")})
-			if err != nil {
-				log.Fatalln("There was a problem connecting to AWS. Ensure your AWS credentials are exported to your environment", err)
-			}
-			// initalize other clients to inject into respective importable services here
-			importables := map[string]tfimportables.Importable{
-				"aws_users":              tfimportables.AWSUsersImportable{Service: iam.New(sess)},
-				"onelogin_users":         tfimportables.OneloginUsersImportable{Service: oneloginClient.Services.UsersV2, SearchID: *searchId},
-				"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId},
-				"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_saml_apps"},
-				"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_oidc_apps"},
-				"onelogin_user_mappings": tfimportables.OneloginUserMappingsImportable{Service: oneloginClient.Services.UserMappingsV2, SearchID: *searchId},
-			}
-			importable, ok := importables[strings.ToLower(args[0])]
-
-			if !ok {
-				availableImportables := make([]string, 0, len(importables))
-				for k := range importables {
-					availableImportables = append(availableImportables, fmt.Sprintf("%s", k))
-				}
-				log.Fatalf("Available resources: %s", availableImportables)
-			}
-
-			tfImport(importable, args, *autoApprove)
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			tfImport(args, clientConfigs, *autoApprove, searchID)
 		},
 	}
 	autoApprove = tfImportCommand.Flags().Bool("auto_approve", false, "Skip confirmation of resource import")
-	searchId = tfImportCommand.Flags().String("id", "", "Import one resource by id")
+	searchID = tfImportCommand.Flags().String("id", "", "Import one resource by id")
 	rootCmd.AddCommand(tfImportCommand)
 }
 
-func tfImport(importable tfimportables.Importable, args []string, autoApprove bool) {
+func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bool, searchID *string) {
 	planFile, err := os.OpenFile(filepath.Join("main.tf"), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatalln("Unable to open main.tf ", err)
 	}
-	resourceDefinitionsFromRemote := importable.ImportFromRemote()
+
+	clientList := clients.New(clientConfigs)
+	importables := tfimportables.New(clientList)
+	importable := importables.GetImportable(strings.ToLower(args[0]))
+
+	resourceDefinitionsFromRemote := importable.ImportFromRemote(searchID)
 	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(planFile, resourceDefinitionsFromRemote)
 	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
@@ -163,7 +144,7 @@ func tfImport(importable tfimportables.Importable, args []string, autoApprove bo
 		log.Fatalln("Unable to Translate tfstate in Memory", err)
 	}
 
-	buffer := stateparser.ConvertTFStateToHCL(state, importable)
+	buffer := stateparser.ConvertTFStateToHCL(state, importables)
 
 	// go to the start of main.tf and overwrite whole file
 	planFile.Seek(0, 0)
