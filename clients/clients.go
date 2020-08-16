@@ -45,9 +45,10 @@ func (c *Clients) OneLoginClient() *client.APIClient {
 		}
 		oneloginClient, err := client.NewClient(clientConfig)
 		if err != nil {
-			log.Println("[Warning] Unable to connect to OneLogin!", err)
+			log.Fatalln("There was a problem configuring the OneLogin client. Ensure your OneLogin credentials are exported to your environment", err)
+		} else {
+			c.OneLogin = oneloginClient
 		}
-		c.OneLogin = oneloginClient
 	}
 	return c.OneLogin
 }
@@ -63,8 +64,9 @@ func (c *Clients) AwsIamClient() *iam.IAM {
 		)
 		if err != nil {
 			log.Fatalln("There was a problem configuring the AWS client. Ensure your AWS credentials are exported to your environment", err)
+		} else {
+			c.AwsIam = iam.New(sess)
 		}
-		c.AwsIam = iam.New(sess)
 	}
 	return c.AwsIam
 }

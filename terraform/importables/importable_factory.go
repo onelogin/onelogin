@@ -31,16 +31,16 @@ func (imf *ImportableList) GetImportable(importableType string) Importable {
 		switch importableType {
 		case "aws_iam_user":
 			remoteClient := imf.Clients.AwsIamClient()
-			imf.importables[importableType] = AWSUsersImportable{Service: remoteClient}
+			imf.importables[importableType] = &AWSUsersImportable{Service: remoteClient}
 		case "onelogin_users":
 			remoteClient := imf.Clients.OneLoginClient()
-			imf.importables[importableType] = OneloginUsersImportable{Service: remoteClient.Services.UsersV2}
+			imf.importables[importableType] = &OneloginUsersImportable{Service: remoteClient.Services.UsersV2}
 		case "onelogin_apps", "onelogin_saml_apps", "onelogin_oidc_apps":
 			remoteClient := imf.Clients.OneLoginClient()
-			imf.importables[importableType] = OneloginAppsImportable{Service: remoteClient.Services.AppsV2, AppType: importableType}
+			imf.importables[importableType] = &OneloginAppsImportable{Service: remoteClient.Services.AppsV2, AppType: importableType}
 		case "onelogin_user_mappings":
 			remoteClient := imf.Clients.OneLoginClient()
-			imf.importables[importableType] = OneloginUserMappingsImportable{Service: remoteClient.Services.UserMappingsV2}
+			imf.importables[importableType] = &OneloginUserMappingsImportable{Service: remoteClient.Services.UserMappingsV2}
 		default:
 			log.Fatalf("The importable %s is not configured", importableType)
 		}

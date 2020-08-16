@@ -17,11 +17,6 @@ func TestOneLoginClient(t *testing.T) {
 				OneLoginURL:          "test.com",
 			},
 		},
-		"It raises an error if a client fails to initialize": {
-			Configs: ClientConfigs{
-				AwsRegion: "us-test-2",
-			},
-		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -41,13 +36,6 @@ func TestAwsIamClient(t *testing.T) {
 		"It initializes and memoizes the client": {
 			Configs: ClientConfigs{
 				AwsRegion:            "us-test-2",
-				OneLoginClientID:     "test",
-				OneLoginClientSecret: "test",
-				OneLoginURL:          "test.com",
-			},
-		},
-		"It raises an error if a client fails to initialize": {
-			Configs: ClientConfigs{
 				OneLoginClientID:     "test",
 				OneLoginClientSecret: "test",
 				OneLoginURL:          "test.com",
