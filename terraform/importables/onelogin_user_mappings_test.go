@@ -47,6 +47,7 @@ func (svc MockUserMappingService) GetOne(id int32) (*usermappings.UserMapping, e
 
 func TestImportUserMappingFromRemote(t *testing.T) {
 	tests := map[string]struct {
+		SearchID   *string
 		Importable OneloginUserMappingsImportable
 		Expected   []ResourceDefinition
 	}{
@@ -57,7 +58,8 @@ func TestImportUserMappingFromRemote(t *testing.T) {
 			},
 		},
 		"It gets one app": {
-			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}, SearchID: "1"},
+			SearchID:   oltypes.String("1"),
+			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}},
 			Expected: []ResourceDefinition{
 				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
 			},
@@ -65,7 +67,7 @@ func TestImportUserMappingFromRemote(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := test.Importable.ImportFromRemote()
+			actual := test.Importable.ImportFromRemote(test.SearchID)
 			assert.Equal(t, test.Expected, actual)
 		})
 	}
