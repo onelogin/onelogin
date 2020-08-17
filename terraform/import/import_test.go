@@ -1,7 +1,6 @@
 package tfimport
 
 import (
-	"fmt"
 	"github.com/onelogin/onelogin/terraform/importables"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -25,22 +24,10 @@ func (m *MockFile) Read(p []byte) (int, error) {
 	return len(p), io.EOF
 }
 
-type MockImportable struct {
-	InputResourceDefinitions []tfimportables.ResourceDefinition
-}
-
-func (mi MockImportable) ImportFromRemote() []tfimportables.ResourceDefinition {
-	return mi.InputResourceDefinitions
-}
-
-func (mi MockImportable) HCLShape() interface{} {
-	return nil
-}
-
 func TestFilterExistingDefinitions(t *testing.T) {
 	tests := map[string]struct {
 		InputReadWriter             io.Reader
-		Importable                  MockImportable
+		IncomingResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedResourceDefinitions []tfimportables.ResourceDefinition
 		ExpectedProviders           []string
 	}{
@@ -49,66 +36,38 @@ func TestFilterExistingDefinitions(t *testing.T) {
 				resource onelogin_apps defined_in_main_already {
 					name = defined_in_main_already
 				}
+				resource okra_saml_apps test_defined_already {
+					name = test_defined_already
+				}
 				provider onelogin {
 					alias "onelogin"
 				}
+				provider okra {
+					alias "okra"
+				}
 			`),
-			Importable: MockImportable{InputResourceDefinitions: []tfimportables.ResourceDefinition{
+			IncomingResourceDefinitions: []tfimportables.ResourceDefinition{
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "defined_in_main_already", Type: "onelogin_apps"},
+				tfimportables.ResourceDefinition{Provider: "okra", Name: "test_defined_already", Type: "okra_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "new_resource", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "test", Type: "onelogin_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "okra", Name: "test", Type: "okra_saml_apps"},
-			}},
+				tfimportables.ResourceDefinition{Provider: "aws", Name: "test", Type: "aws_apps"},
+			},
 			ExpectedResourceDefinitions: []tfimportables.ResourceDefinition{
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "new_resource", Type: "onelogin_apps"},
 				tfimportables.ResourceDefinition{Provider: "onelogin", Name: "test", Type: "onelogin_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "okra", Name: "test", Type: "okra_saml_apps"},
+				tfimportables.ResourceDefinition{Provider: "aws", Name: "test", Type: "aws_apps"},
 			},
-			ExpectedProviders: []string{"okra"},
+			ExpectedProviders: []string{"aws"},
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualResourceDefinitions, actualProviderDefinitions := FilterExistingDefinitions(test.InputReadWriter, test.Importable)
+			actualResourceDefinitions, actualProviderDefinitions := FilterExistingDefinitions(test.InputReadWriter, test.IncomingResourceDefinitions)
 			assert.Equal(t, test.ExpectedResourceDefinitions, actualResourceDefinitions)
 			assert.Equal(t, test.ExpectedProviders, actualProviderDefinitions)
-		})
-	}
-}
-
-func TestConvertTFStateToHCL(t *testing.T) {
-	tests := map[string]struct {
-		InputState     State
-		ExpectedOutput string
-	}{
-		"it creates a bytes buffer representing the state in HCL": {
-			InputState: State{
-				Resources: []StateResource{
-					StateResource{
-						Name:     "test_resource",
-						Type:     "onelogin_apps",
-						Provider: "provider.onelogin",
-						Instances: []ResourceInstance{
-							ResourceInstance{
-								Data: map[string]interface{}{
-									"name":          "test",
-									"connector_id":  22,
-									"rules":         []map[string]interface{}{{"actions": []map[string]interface{}{{"value": []string{"member_of", "asdf"}}}}},
-									"provisioning":  map[string]bool{"enabled": true},
-									"configuration": map[string]string{"provider_arn": "arn", "signature_algorithm": "sha-256"},
-								},
-							},
-						},
-					},
-				},
-			},
-			ExpectedOutput: fmt.Sprintf("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\tconnector_id = 22\n\tname = \"test\"\n\n\tconfiguration = {\n\t\tprovider_arn = \"arn\"\n\t\tsignature_algorithm = \"sha-256\"\n\t}\n\n\tprovisioning = {\n\t\tenabled = true\n\t}\n\n\trules {\n\n\t\tactions {\n\t\t\tvalue = [\"member_of\",\"asdf\"]\n\t\t}\n\t}\n}\n\n"),
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := ConvertTFStateToHCL(test.InputState, tfimportables.OneloginAppsImportable{})
-			assert.Equal(t, len(test.ExpectedOutput), len(string(actual)))
 		})
 	}
 }
@@ -122,8 +81,8 @@ func TestAppendDefinitionsToMainTF(t *testing.T) {
 	}{
 		"it adds provider and resource to the writer": {
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Name: "test", Type: "test", Provider: "test"},
-				tfimportables.ResourceDefinition{Name: "test", Type: "test", Provider: "test2"},
+				tfimportables.ResourceDefinition{Name: "test", Type: "test", ImportID: "test", Provider: "test"},
+				tfimportables.ResourceDefinition{Name: "test", Type: "test", ImportID: "test", Provider: "test2"},
 			},
 			TestFile:                 MockFile{},
 			InputProviderDefinitions: []string{"test", "test2"},

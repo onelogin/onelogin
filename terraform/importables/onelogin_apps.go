@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
-	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
 type AppQuerier interface {
@@ -15,23 +14,22 @@ type AppQuerier interface {
 }
 
 type OneloginAppsImportable struct {
-	AppType  string
-	SearchID string
-	Service  AppQuerier
+	AppType string
+	Service AppQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
-func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
+func (i OneloginAppsImportable) ImportFromRemote(searchId *string) []ResourceDefinition {
 	var remoteApps []apps.App
-	if i.SearchID == "" {
+	if searchId == nil || *searchId == "" {
 		fmt.Println("Collecting Apps from OneLogin...")
-		remoteApps = i.GetAllApps(i.Service)
+		remoteApps = i.getOneLoginAppsApps()
 	} else {
-		fmt.Printf("Collecting App %s from OneLogin...\n", i.SearchID)
-		id, err := strconv.Atoi(i.SearchID)
+		fmt.Printf("Collecting App %s from OneLogin...\n", *searchId)
+		id, err := strconv.Atoi(*searchId)
 		if err != nil {
-			log.Fatalln("invalid input given for id", i.SearchID)
+			log.Fatalln("invalid input given for id", *searchId)
 		}
 		app, err := i.Service.GetOne(int32(id))
 		if err != nil {
@@ -47,7 +45,7 @@ func (i OneloginAppsImportable) ImportFromRemote() []ResourceDefinition {
 func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, app := range allApps {
-		resourceDefinition := ResourceDefinition{Provider: "onelogin"}
+		resourceDefinition := ResourceDefinition{Provider: "onelogin", ImportID: fmt.Sprintf("%d", *app.ID), Name: *app.Name}
 		switch *app.AuthMethod {
 		case 8:
 			resourceDefinition.Type = "onelogin_oidc_apps"
@@ -56,14 +54,13 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 		default:
 			resourceDefinition.Type = "onelogin_apps"
 		}
-		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(resourceDefinition.Type), *app.ID)
 		resourceDefinitions[i] = resourceDefinition
 	}
 	return resourceDefinitions
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
+func (i OneloginAppsImportable) getOneLoginAppsApps() []apps.App {
 
 	appTypeQueryMap := map[string]string{
 		"onelogin_apps":      "",
@@ -72,7 +69,7 @@ func (i OneloginAppsImportable) GetAllApps(appsService AppQuerier) []apps.App {
 	}
 	requestedAppType := appTypeQueryMap[i.AppType]
 
-	appApps, err := appsService.Query(&apps.AppsQuery{
+	appApps, err := i.Service.Query(&apps.AppsQuery{
 		AuthMethod: requestedAppType,
 	})
 	if err != nil {

@@ -14,22 +14,21 @@ type UserMappingQuerier interface {
 }
 
 type OneloginUserMappingsImportable struct {
-	Service  UserMappingQuerier
-	SearchID string
+	Service UserMappingQuerier
 }
 
 // Interface requirement to be an Importable. Calls out to remote (onelogin api) and
 // creates their Terraform ResourceDefinitions
-func (i OneloginUserMappingsImportable) ImportFromRemote() []ResourceDefinition {
+func (i OneloginUserMappingsImportable) ImportFromRemote(searchId *string) []ResourceDefinition {
 	var remoteUserMappings []usermappings.UserMapping
-	if i.SearchID == "" {
+	if searchId == nil || *searchId == "" {
 		fmt.Println("Collecting User Mappings from OneLogin...")
-		remoteUserMappings = i.GetAll(i.Service)
+		remoteUserMappings = i.getOneLoginUserMappings()
 	} else {
-		fmt.Printf("Collecting User Mapping %s from OneLogin...\n", i.SearchID)
-		id, err := strconv.Atoi(i.SearchID)
+		fmt.Printf("Collecting User Mapping %s from OneLogin...\n", *searchId)
+		id, err := strconv.Atoi(*searchId)
 		if err != nil {
-			log.Fatalln("invalid input given for id", i.SearchID)
+			log.Fatalln("invalid input given for id", *searchId)
 		}
 		userMapping, err := i.Service.GetOne(int32(id))
 		if err != nil {
@@ -45,17 +44,19 @@ func (i OneloginUserMappingsImportable) ImportFromRemote() []ResourceDefinition 
 func assembleUserMappingResourceDefinitions(allUserMappings []usermappings.UserMapping) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allUserMappings))
 	for i, userMapping := range allUserMappings {
-		resourceDefinition := ResourceDefinition{Provider: "onelogin"}
-		resourceDefinition.Type = "onelogin_user_mappings"
-		resourceDefinition.Name = fmt.Sprintf("%s-%d", utils.ToSnakeCase(utils.ReplaceSpecialChar(*userMapping.Name, "")), *userMapping.ID)
-		resourceDefinitions[i] = resourceDefinition
+		resourceDefinitions[i] = ResourceDefinition{
+			Provider: "onelogin",
+			Type:     "onelogin_user_mappings",
+			ImportID: fmt.Sprintf("%d", *userMapping.ID),
+			Name:     utils.ReplaceSpecialChar(*userMapping.Name, ""),
+		}
 	}
 	return resourceDefinitions
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginUserMappingsImportable) GetAll(userMappingsService UserMappingQuerier) []usermappings.UserMapping {
-	um, err := userMappingsService.Query(&usermappings.UserMappingsQuery{})
+func (i OneloginUserMappingsImportable) getOneLoginUserMappings() []usermappings.UserMapping {
+	um, err := i.Service.Query(&usermappings.UserMappingsQuery{})
 	if err != nil {
 		log.Fatal("error retrieving apps ", err)
 	}
