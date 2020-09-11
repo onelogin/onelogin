@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/apps"
+	"github.com/onelogin/onelogin-go-sdk/pkg/utils"
 )
 
 type AppQuerier interface {
@@ -45,7 +46,11 @@ func (i OneloginAppsImportable) ImportFromRemote(searchId *string) []ResourceDef
 func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, app := range allApps {
-		resourceDefinition := ResourceDefinition{Provider: "onelogin", ImportID: fmt.Sprintf("%d", *app.ID), Name: *app.Name}
+		resourceDefinition := ResourceDefinition{
+			Provider: "onelogin",
+			ImportID: fmt.Sprintf("%d", *app.ID),
+			Name:     utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")),
+		}
 		switch *app.AuthMethod {
 		case 8:
 			resourceDefinition.Type = "onelogin_oidc_apps"

@@ -8,8 +8,8 @@ type Importable interface {
 // ResourceDefinition represents basic information about the resource to be imported
 // so it can be used in HCL file and set up terraform import command
 type ResourceDefinition struct {
-	Provider string
-	Name     string
-	Type     string
-	ImportID string
+	Provider string // Name of provider Terraform will use to do import
+	Name     string // Name of the resource as defined in HCL
+	Type     string // Type of resource e.g. aws_iam_user
+	ImportID string // ID used by Terraform provider to download the resource
 }
