@@ -32,6 +32,7 @@ func init() {
 		create new .tfstate and .tf files so you can begin managing existing resources with Terraform.
 		Available Imports:
 			onelogin_apps          => onelogin all apps
+			onelogin_app_rules     => onelogin all app ruless
 			onelogin_saml_apps     => onelogin SAML apps only
 			onelogin_oidc_apps     => onelogin OIDC apps only
 			onelogin_user_mappings => onelogin user mappings

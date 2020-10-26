@@ -54,11 +54,11 @@ func assembleUserMappingResourceDefinitions(allUserMappings []usermappings.UserM
 	return resourceDefinitions
 }
 
-// Makes the HTTP call to the remote to get the apps using the given query parameters
+// Makes the HTTP call to the remote to get the user mappings using the given query parameters
 func (i OneloginUserMappingsImportable) getOneLoginUserMappings() []usermappings.UserMapping {
 	um, err := i.Service.Query(&usermappings.UserMappingsQuery{})
 	if err != nil {
-		log.Fatal("error retrieving apps ", err)
+		log.Fatal("error retrieving user mappings ", err)
 	}
 	return um
 }

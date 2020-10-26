@@ -38,6 +38,9 @@ func (imf *ImportableList) GetImportable(importableType string) Importable {
 		case "onelogin_apps", "onelogin_saml_apps", "onelogin_oidc_apps":
 			remoteClient := imf.Clients.OneLoginClient()
 			imf.importables[importableType] = &OneloginAppsImportable{Service: remoteClient.Services.AppsV2, AppType: importableType}
+		case "onelogin_app_rules":
+			remoteClient := imf.Clients.OneLoginClient()
+			imf.importables[importableType] = &OneloginAppRulesImportable{Service: remoteClient.Services.AppRulesV2}
 		case "onelogin_user_mappings":
 			remoteClient := imf.Clients.OneLoginClient()
 			imf.importables[importableType] = &OneloginUserMappingsImportable{Service: remoteClient.Services.UserMappingsV2}

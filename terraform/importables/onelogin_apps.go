@@ -100,7 +100,6 @@ type AppData struct {
 	Configuration      AppConfigurationData `json:"configuration,omitempty"`
 	Provisioning       AppProvisioningData  `json:"provisioning,omitempty"`
 	Parameters         []AppParametersData  `json:"parameters,omitempty"`
-	Rules              []AppRuleData        `json:"rules,omitempty"`
 }
 
 // AppProvisioning is the contract for provisioning.
@@ -134,25 +133,4 @@ type AppParametersData struct {
 	ProvisionedEntitlements   *bool   `json:"provisioned_entitlements,omitempty"`
 	SafeEntitlementsEnabled   *bool   `json:"safe_entitlements_enabled,omitempty"`
 	IncludeInSamlAssertion    *bool   `json:"include_in_saml_assertion,omitempty"`
-}
-
-// Define our own version of the app rules to refine what fields get written to main.tf plan
-type AppRuleData struct {
-	Name       *string                 `json:"name,omitempty"`
-	Match      *string                 `json:"match,omitempty"`
-	Enabled    *bool                   `json:"enabled,omitempty"`
-	Conditions []AppRuleConditionsData `json:"conditions,omitempty"`
-	Actions    []AppRuleActionsData    `json:"actions,omitempty"`
-}
-
-type AppRuleActionsData struct {
-	Action     *string  `json:"action,omitempty"`
-	Value      []string `json:"value,omitempty"`
-	Expression *string  `json:"expression,omitempty"`
-}
-
-type AppRuleConditionsData struct {
-	Source   *string `json:"source,omitempty"`
-	Operator *string `json:"operator,omitempty"`
-	Value    *string `json:"value,omitempty"`
 }
