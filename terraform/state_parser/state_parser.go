@@ -76,6 +76,7 @@ func convertToHCLLine(input interface{}, indentLevel int, builder *strings.Build
 	json.Unmarshal(b, &m)
 	for k, v := range m {
 		if v != nil {
+			log.Println(v)
 			switch reflect.TypeOf(v).Kind() {
 			case reflect.String:
 				builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))
@@ -91,12 +92,21 @@ func convertToHCLLine(input interface{}, indentLevel int, builder *strings.Build
 							convertToHCLLine(sl[j], indentLevel+1, builder)
 							builder.WriteString(fmt.Sprintf("%s}\n", indent(indentLevel)))
 						}
+					case reflect.Int, reflect.Int32, reflect.Float32, reflect.Float64, reflect.Bool:
+						builder.WriteString(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))
+						for j := 0; j < len(sl); j++ {
+							builder.WriteString(fmt.Sprintf("%0.f", sl[j])) // not really expecting decimal values in terraform but may require a fix later
+							if j < len(sl)-1 {
+								builder.WriteString(", ")
+							}
+						}
+						builder.WriteString("]\n")
 					default: // array of strings
 						builder.WriteString(fmt.Sprintf("%s%s = [", indent(indentLevel), utils.ToSnakeCase(k)))
 						for j := 0; j < len(sl); j++ {
 							builder.WriteString(fmt.Sprintf("%q", sl[j]))
 							if j < len(sl)-1 {
-								builder.WriteString(",")
+								builder.WriteString(", ")
 							}
 						}
 						builder.WriteString("]\n")

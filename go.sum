@@ -125,6 +125,8 @@ github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22
 github.com/jpoles1/gopherbadger v2.2.0+incompatible/go.mod h1:DVwxsf5adYLiDOj955t/ejfCRWjKA5tme6Vejb72Ro0=
 github.com/jpoles1/gopherbadger v2.3.0+incompatible h1:XMBrJ4UAGZkHisRncvL0xaNB5U8rbqqtzfVXKyLcn7s=
 github.com/jpoles1/gopherbadger v2.3.0+incompatible/go.mod h1:DVwxsf5adYLiDOj955t/ejfCRWjKA5tme6Vejb72Ro0=
+github.com/jpoles1/gopherbadger v2.4.0+incompatible h1:UHNcdQnmeUo8kAIAZfz55Dkev3zM/Jj2SMgeEwkMO8A=
+github.com/jpoles1/gopherbadger v2.4.0+incompatible/go.mod h1:DVwxsf5adYLiDOj955t/ejfCRWjKA5tme6Vejb72Ro0=
 github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/json-iterator/go v1.1.9/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
@@ -192,6 +194,12 @@ github.com/onelogin/onelogin-go-sdk v0.2.8 h1:/mqa7vWaw1v4VzGT3hmbg7luUdcyeBAJzr
 github.com/onelogin/onelogin-go-sdk v0.2.8/go.mod h1:y/hManULXRfHb0Oy4QefoYPjOOdmHJQdOg+ul8gJu0o=
 github.com/onelogin/onelogin-go-sdk v0.2.9 h1:kQ7UMFhXJpAVx0MkGl1MXxfFGFYl6keRMzA28YjZugY=
 github.com/onelogin/onelogin-go-sdk v0.2.9/go.mod h1:y/hManULXRfHb0Oy4QefoYPjOOdmHJQdOg+ul8gJu0o=
+github.com/onelogin/onelogin-go-sdk v0.2.10 h1:QMR1BOsm6jiCbRRcuGuvs/5DmuhY3qOwDqtUf3Qibbc=
+github.com/onelogin/onelogin-go-sdk v0.2.10/go.mod h1:y/hManULXRfHb0Oy4QefoYPjOOdmHJQdOg+ul8gJu0o=
+github.com/onelogin/onelogin-go-sdk v1.0.1 h1:vJ+LInSUKcjr4nQMZVfeskv2tW6fvzyWPzKtifLjy28=
+github.com/onelogin/onelogin-go-sdk v1.0.1/go.mod h1:GM0+ziS1fhnPnxC2fLzVloxn+VzBwzXKkIaDOPoE5GU=
+github.com/onelogin/onelogin-go-sdk v1.0.11 h1:xUPUfox+2ruhtD5OnVnx40rgkbjRbb9CqBSyuHvmac0=
+github.com/onelogin/onelogin-go-sdk v1.0.11/go.mod h1:GM0+ziS1fhnPnxC2fLzVloxn+VzBwzXKkIaDOPoE5GU=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.0/go.mod h1:oUhWkIvk5aDxtKvDDuw8gItl8pKl42LzjC9KZE0HfGg=
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=

@@ -41,6 +41,9 @@ func (imf *ImportableList) GetImportable(importableType string) Importable {
 		case "onelogin_user_mappings":
 			remoteClient := imf.Clients.OneLoginClient()
 			imf.importables[importableType] = &OneloginUserMappingsImportable{Service: remoteClient.Services.UserMappingsV2}
+		case "onelogin_roles":
+			remoteClient := imf.Clients.OneLoginClient()
+			imf.importables[importableType] = &OneloginRolesImportable{Service: remoteClient.Services.RolesV1}
 		default:
 			log.Fatalf("The importable %s is not configured", importableType)
 		}

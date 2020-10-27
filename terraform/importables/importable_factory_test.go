@@ -13,11 +13,12 @@ func TestGetImportable(t *testing.T) {
 		OneLoginClientSecret: "test",
 		OneLoginURL:          "test.com",
 	})
-	importableNames := [5]string{
+	importableNames := [6]string{
 		"onelogin_apps",
 		"onelogin_users",
 		"onelogin_apps",
 		"onelogin_user_mappings",
+		"onelogin_roles",
 		"aws_iam_user",
 	}
 	tests := map[string]struct {
