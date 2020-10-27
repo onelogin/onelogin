@@ -35,6 +35,19 @@ func TestConvertTFStateToHCL(t *testing.T) {
 					},
 					StateResource{
 						Name:     "test_resource",
+						Type:     "onelogin_roles",
+						Provider: "provider.onelogin",
+						Instances: []ResourceInstance{
+							ResourceInstance{
+								Data: map[string]interface{}{
+									"name": "test",
+									"apps": []int{1, 2, 3},
+								},
+							},
+						},
+					},
+					StateResource{
+						Name:     "test_resource",
 						Type:     "onelogin_users",
 						Provider: "provider.onelogin",
 						Instances: []ResourceInstance{
@@ -61,7 +74,7 @@ func TestConvertTFStateToHCL(t *testing.T) {
 					},
 				},
 			},
-			ExpectedOutput: fmt.Sprintf("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\n\tprovisioning = {\n\t\tenabled = true\n\t}\n\n\trules {\n\n\t\tactions {\n\t\t\tvalue = [\"member_of\",\"asdf\"]\n\t\t}\n\t}\n\tconnector_id = 22\n\tname = \"test\"\n\n\tconfiguration = {\n\t\tprovider_arn = \"arn\"\n\t\tsignature_algorithm = \"sha-256\"\n\t}\n}\n\nresource onelogin_users test_resource {\n\tprovider = onelogin\n\tusername = \"test\"\n\temail = \"test@test.test\"\n}\n\nprovider aws {\n\talias = \"aws\"\n}\n\nresource aws_iam_user test_resource {\n\tprovider = aws\n\tpath = \"/\"\n}\n\n"),
+			ExpectedOutput: fmt.Sprintf("provider onelogin {\n\talias = \"onelogin\"\n}\n\nresource onelogin_apps test_resource {\n\tprovider = onelogin\n\n\tprovisioning = {\n\t\tenabled = true\n\t}\n\n\trules {\n\n\t\tactions {\n\t\t\tvalue = [\"member_of\", \"asdf\"]\n\t\t}\n\t}\n\tconnector_id = 22\n\tname = \"test\"\n\n\tconfiguration = {\n\t\tprovider_arn = \"arn\"\n\t\tsignature_algorithm = \"sha-256\"\n\t}\n}\n\nresource onelogin_roles test_resource {\n\tprovider = onelogin\n\tname = \"test\"\n\tapps = [1, 2, 3]\n}\n\nresource onelogin_users test_resource {\n\tprovider = onelogin\n\tusername = \"test\"\n\temail = \"test@test.test\"\n}\n\nprovider aws {\n\talias = \"aws\"\n}\n\nresource aws_iam_user test_resource {\n\tprovider = aws\n\tpath = \"/\"\n}\n\n"),
 		},
 	}
 	for name, test := range tests {
