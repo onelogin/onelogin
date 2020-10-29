@@ -49,7 +49,6 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 		resourceDefinition := ResourceDefinition{
 			Provider: "onelogin",
 			ImportID: fmt.Sprintf("%d", *app.ID),
-			Name:     utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")),
 		}
 		switch *app.AuthMethod {
 		case 8:
@@ -59,6 +58,7 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 		default:
 			resourceDefinition.Type = "onelogin_apps"
 		}
+		resourceDefinition.Name = fmt.Sprintf("%s_%s-%d", utils.ToSnakeCase(resourceDefinition.Type), utils.ToSnakeCase(utils.ReplaceSpecialChar(*app.Name, "")), *app.ID)
 		resourceDefinitions[i] = resourceDefinition
 	}
 	return resourceDefinitions
