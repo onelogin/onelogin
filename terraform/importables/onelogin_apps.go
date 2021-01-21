@@ -47,7 +47,7 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, app := range allApps {
 		resourceDefinition := ResourceDefinition{
-			Provider: "onelogin",
+			Provider: "onelogin/onelogin",
 			ImportID: fmt.Sprintf("%d", *app.ID),
 		}
 		switch *app.AuthMethod {

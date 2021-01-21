@@ -32,29 +32,37 @@ type ResourceInstance struct {
 // takes the tfstate representations formats them as HCL and writes them to a bytes buffer
 // so it can be flushed into main.tf
 func ConvertTFStateToHCL(state State, importables *tfimportables.ImportableList) []byte {
-	var builder strings.Builder
-	knownProviders := map[string]int{}
+	var configBuilder strings.Builder
+	var resourceBuilder strings.Builder
+	providerSources := map[string]string{}
 
 	log.Println("Assembling main.tf...")
 
 	for _, resource := range state.Resources {
-		providerDefinition := strings.Replace(resource.Provider, "provider.", "", 1)
-		if knownProviders[providerDefinition] == 0 {
-			knownProviders[providerDefinition]++
-			builder.WriteString(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", providerDefinition, providerDefinition))
-		}
+		providerSource := strings.Replace(resource.Provider, `provider["`, "", 1)
+		providerSource = strings.Replace(providerSource, `"]`, "", 1)
+		providerSourceInfo := strings.Split(providerSource, "/")
+		providerSources[providerSourceInfo[1]] = strings.Join(providerSourceInfo[1:], "/")
+
 		for _, instance := range resource.Instances {
-			builder.WriteString(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))
-			builder.WriteString(fmt.Sprintf("\tprovider = %s\n", providerDefinition))
+			resourceBuilder.WriteString(fmt.Sprintf("resource %s %s {\n", resource.Type, resource.Name))
 			b, _ := json.Marshal(instance.Data)
 			hclShape := importables.GetImportable(resource.Type).HCLShape()
 			json.Unmarshal(b, hclShape)
-			convertToHCLLine(hclShape, 1, &builder)
-			builder.WriteString("}\n\n")
+			convertToHCLLine(hclShape, 1, &resourceBuilder)
+			resourceBuilder.WriteString("}\n\n")
 		}
-		builder.WriteString(string(resource.Content))
+		resourceBuilder.WriteString(string(resource.Content))
 	}
-	return []byte(builder.String())
+
+	configBuilder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
+	for key, provider := range providerSources {
+		configBuilder.WriteString(fmt.Sprintf("\t\t%s = {\n\t\t\tsource = \"%s\"\n\t\t}\n", key, provider))
+	}
+	configBuilder.WriteString(fmt.Sprintf("\t}\n}\n"))
+	configBuilder.WriteString(resourceBuilder.String())
+
+	return []byte(configBuilder.String())
 }
 
 func indent(level int) []byte {
@@ -76,7 +84,6 @@ func convertToHCLLine(input interface{}, indentLevel int, builder *strings.Build
 	json.Unmarshal(b, &m)
 	for k, v := range m {
 		if v != nil {
-			log.Println(v)
 			switch reflect.TypeOf(v).Kind() {
 			case reflect.String:
 				builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))

@@ -45,7 +45,7 @@ func assembleUserMappingResourceDefinitions(allUserMappings []usermappings.UserM
 	resourceDefinitions := make([]ResourceDefinition, len(allUserMappings))
 	for i, userMapping := range allUserMappings {
 		resourceDefinitions[i] = ResourceDefinition{
-			Provider: "onelogin",
+			Provider: "onelogin/onelogin",
 			Type:     "onelogin_user_mappings",
 			ImportID: fmt.Sprintf("%d", *userMapping.ID),
 			Name:     utils.ReplaceSpecialChar(*userMapping.Name, ""),

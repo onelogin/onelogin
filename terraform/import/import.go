@@ -13,11 +13,11 @@ import (
 // file to prevent duplicate definitions which breaks terraform import
 func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
 	resourceDefinitionsToImport := []tfimportables.ResourceDefinition{} // resource definitions not in HCL file that were included in incoming resources
-	unspecifiedProviders := []string{}                                  // providers not already in HCL file from which to import new resources
+	providerDefinitions := []string{}
 
 	// resource definition headers in HCL file like resource onelogin_apps cool_app {}
 	searchCriteria := map[string]*regexp.Regexp{
-		"provider": regexp.MustCompile(`(\w*provider\w*)\s(([a-zA-Z\_]*))\s\{`),
+		"provider": regexp.MustCompile(`^\s*?source\s?=\s?"[a-zA-Z]+\/[a-zA-Z]+"?`),
 		"resource": regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`),
 	}
 
@@ -35,7 +35,7 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 			if len(definitionHeaderLine) > 0 {
 				var definitionKey string
 				if regexName == "provider" {
-					definitionKey = fmt.Sprintf("%s", definitionHeaderLine[len(definitionHeaderLine)-1])
+					definitionKey = strings.ReplaceAll(strings.ReplaceAll(strings.Split(t, "=")[1], "\"", ""), " ", "")
 				}
 				if regexName == "resource" {
 					definitionKey = fmt.Sprintf("%s.%s", definitionHeaderLine[len(definitionHeaderLine)-2], definitionHeaderLine[len(definitionHeaderLine)-1])
@@ -48,27 +48,46 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 	for _, resourceDefinition := range resources {
 		if definitionHeaderCounter["provider"][resourceDefinition.Provider] == 0 {
 			definitionHeaderCounter["provider"][resourceDefinition.Provider]++
-			unspecifiedProviders = append(unspecifiedProviders, resourceDefinition.Provider)
 		}
 		if definitionHeaderCounter["resource"][fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)] == 0 {
 			resourceDefinitionsToImport = append(resourceDefinitionsToImport, resourceDefinition)
 		}
 	}
 
-	return resourceDefinitionsToImport, unspecifiedProviders
+	for k := range definitionHeaderCounter["provider"] {
+		providerDefinitions = append(providerDefinitions, k)
+	}
+	return resourceDefinitionsToImport, providerDefinitions
 }
 
 // WriteHCLDefinitionHeaders appends empty resource definitions to the existing main.tf file so terraform import will pick them up
-func WriteHCLDefinitionHeaders(resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string, planFile io.Writer) error {
+func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []tfimportables.ResourceDefinition, newProviderDefinitions []string) string {
 	var builder strings.Builder
-	for _, newProvider := range providerDefinitions {
-		builder.WriteString(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))
+	re := regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`)
+
+	builder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
+	for _, newProvider := range newProviderDefinitions {
+		p := strings.Split(newProvider, "/")[0]
+		builder.WriteString(fmt.Sprintf("\t\t%s = {\n\t\t\tsource = \"%s\"\n\t\t}\n", p, newProvider))
 	}
-	for _, resourceDefinition := range resourceDefinitions {
+	builder.WriteString(fmt.Sprintf("\t}\n}\n"))
+
+	scanner := bufio.NewScanner(planFile)
+	shouldRead := false
+	for scanner.Scan() {
+		t := scanner.Text()
+		m := re.FindStringSubmatch(t)
+		if len(m) != 0 {
+			shouldRead = true
+		}
+		if shouldRead {
+			builder.WriteString(fmt.Sprintf("%s\n", t))
+		}
+	}
+
+	for _, resourceDefinition := range newResourceDefinitions {
 		builder.WriteString(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))
 	}
-	if _, err := planFile.Write([]byte(builder.String())); err != nil {
-		return err
-	}
-	return nil
+
+	return builder.String()
 }

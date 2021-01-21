@@ -1,1 +1,4 @@
 coverage.out
+terraform.*
+.terraform.*
+.terraform/

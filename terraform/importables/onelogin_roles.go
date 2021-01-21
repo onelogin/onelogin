@@ -43,7 +43,7 @@ func (i OneloginRolesImportable) ImportFromRemote(searchId *string) []ResourceDe
 	resourceDefinitions := make([]ResourceDefinition, len(out))
 	for i, rd := range out {
 		resourceDefinitions[i] = ResourceDefinition{
-			Provider: "onelogin",
+			Provider: "onelogin/onelogin",
 			Type:     "onelogin_roles",
 			Name:     utils.ToSnakeCase(utils.ReplaceSpecialChar(*rd.Name, "")),
 			ImportID: fmt.Sprintf("%d", *rd.ID),
@@ -53,5 +53,12 @@ func (i OneloginRolesImportable) ImportFromRemote(searchId *string) []ResourceDe
 }
 
 func (i OneloginRolesImportable) HCLShape() interface{} {
-	return &roles.Role{}
+	return &Role{}
+}
+
+type Role struct {
+	Name   *string `json:"name,omitempty"`
+	Admins []int32 `json:"admins,omitempty"`
+	Apps   []int32 `json:"apps,omitempty"`
+	Users  []int32 `json:"users,omitempty"`
 }
