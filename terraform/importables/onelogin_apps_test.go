@@ -19,9 +19,9 @@ func TestAssembleResourceDefinitions(t *testing.T) {
 				apps.App{Name: oltypes.String("test3"), AuthMethod: oltypes.Int32(1), ID: oltypes.Int32(3)},
 			},
 			ExpectedOut: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_oidc_apps", ImportID: "1", Name: "test1"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_saml_apps", ImportID: "2", Name: "test2"},
-				ResourceDefinition{Provider: "onelogin", Type: "onelogin_apps", ImportID: "3", Name: "test3"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Type: "onelogin_oidc_apps", ImportID: "1", Name: "onelogin_oidc_apps_test1-1"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Type: "onelogin_saml_apps", ImportID: "2", Name: "onelogin_saml_apps_test2-2"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Type: "onelogin_apps", ImportID: "3", Name: "onelogin_apps_test3-3"},
 			},
 		},
 	}
@@ -54,14 +54,14 @@ func TestImportAppFromRemote(t *testing.T) {
 		"It pulls all apps of a certain type": {
 			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_saml_apps"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Name: "onelogin_saml_apps_test2-2", ImportID: "2", Type: "onelogin_saml_apps"},
 			},
 		},
 		"It gets one app": {
 			SearchID:   oltypes.String("2"),
 			Importable: OneloginAppsImportable{AppType: "onelogin_saml_apps", Service: MockAppsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_saml_apps"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Name: "onelogin_saml_apps_test2-2", ImportID: "2", Type: "onelogin_saml_apps"},
 			},
 		},
 	}

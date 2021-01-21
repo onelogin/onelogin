@@ -8,3 +8,6 @@ secure:
 
 ship:
 	bash ship.sh github.com/onelogin/onelogin
+
+clear-tf:
+	rm -rf .terraform/ && rm .terraform.lock.hcl terraform.* main.tf

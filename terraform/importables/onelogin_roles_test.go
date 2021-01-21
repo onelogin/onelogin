@@ -29,15 +29,15 @@ func TestImportRoleFromRemote(t *testing.T) {
 		"It pulls all roles": {
 			Importable: OneloginRolesImportable{Service: MockRolesService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test1", ImportID: "1", Type: "onelogin_roles"},
-				ResourceDefinition{Provider: "onelogin", Name: "test2", ImportID: "2", Type: "onelogin_roles"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test1", ImportID: "1", Type: "onelogin_roles"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_roles"},
 			},
 		},
 		"It gets one role": {
 			SearchID:   oltypes.String("1"),
 			Importable: OneloginRolesImportable{Service: MockRolesService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin", Name: "test", ImportID: "1", Type: "onelogin_roles"},
+				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test", ImportID: "1", Type: "onelogin_roles"},
 			},
 		},
 	}
