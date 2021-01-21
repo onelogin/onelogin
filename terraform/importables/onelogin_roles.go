@@ -43,7 +43,7 @@ func (i OneloginRolesImportable) ImportFromRemote(searchId *string) []ResourceDe
 	resourceDefinitions := make([]ResourceDefinition, len(out))
 	for i, rd := range out {
 		resourceDefinitions[i] = ResourceDefinition{
-			Provider: "onelogin",
+			Provider: "onelogin/onelogin",
 			Type:     "onelogin_roles",
 			Name:     utils.ToSnakeCase(utils.ReplaceSpecialChar(*rd.Name, "")),
 			ImportID: fmt.Sprintf("%d", *rd.ID),

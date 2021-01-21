@@ -44,7 +44,7 @@ func (i OneloginUsersImportable) ImportFromRemote(searchId *string) []ResourceDe
 	for i, rd := range out {
 		name := utils.ReplaceSpecialChar(*rd.Email, "_") // use email as unique identifier
 		resourceDefinitions[i] = ResourceDefinition{
-			Provider: "onelogin",
+			Provider: "onelogin/onelogin",
 			Type:     "onelogin_users",
 			Name:     name[:len(name)-4], // trims the .com part of the email
 			ImportID: fmt.Sprintf("%d", *rd.ID),

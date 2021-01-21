@@ -26,8 +26,8 @@ func TestImportAWSUserFromRemote(t *testing.T) {
 		"It pulls all users": {
 			Importable: AWSUsersImportable{Service: MockAWSUsersService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "aws", Name: "test_1", ImportID: "test_1", Type: "aws_iam_user"},
-				ResourceDefinition{Provider: "aws", Name: "test_2", ImportID: "test_2", Type: "aws_iam_user"},
+				ResourceDefinition{Provider: "aws/aws", Name: "test_1", ImportID: "test_1", Type: "aws_iam_user"},
+				ResourceDefinition{Provider: "aws/aws", Name: "test_2", ImportID: "test_2", Type: "aws_iam_user"},
 			},
 		},
 	}

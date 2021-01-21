@@ -17,7 +17,7 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 
 	// resource definition headers in HCL file like resource onelogin_apps cool_app {}
 	searchCriteria := map[string]*regexp.Regexp{
-		"provider": regexp.MustCompile(`(\w*provider\w*)\s(([a-zA-Z\_]*))\s\{`),
+		"provider": regexp.MustCompile(`^\s*?source\s?=\s?"[a-zA-Z]+\/[a-zA-Z]+"?`),
 		"resource": regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`),
 	}
 
@@ -35,7 +35,7 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 			if len(definitionHeaderLine) > 0 {
 				var definitionKey string
 				if regexName == "provider" {
-					definitionKey = fmt.Sprintf("%s", definitionHeaderLine[len(definitionHeaderLine)-1])
+					definitionKey = strings.ReplaceAll(strings.ReplaceAll(strings.Split(t, "=")[1], "\"", ""), " ", "")
 				}
 				if regexName == "resource" {
 					definitionKey = fmt.Sprintf("%s.%s", definitionHeaderLine[len(definitionHeaderLine)-2], definitionHeaderLine[len(definitionHeaderLine)-1])
@@ -44,7 +44,6 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 			}
 		}
 	}
-
 	for _, resourceDefinition := range resources {
 		if definitionHeaderCounter["provider"][resourceDefinition.Provider] == 0 {
 			definitionHeaderCounter["provider"][resourceDefinition.Provider]++
@@ -61,9 +60,27 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 // WriteHCLDefinitionHeaders appends empty resource definitions to the existing main.tf file so terraform import will pick them up
 func WriteHCLDefinitionHeaders(resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string, planFile io.Writer) error {
 	var builder strings.Builder
+	// Write out the provider requirements. No version, so it'll get the latest.
+	// terraform {
+	//   required_providers = {
+	//     prov = {
+	//       source = "prov/prov"
+	//     }
+	//     prov2 = {
+	//       source = "prov2/prov2"
+	//     }
+	//   }
+	// }
+	builder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
 	for _, newProvider := range providerDefinitions {
-		builder.WriteString(fmt.Sprintf("provider %s {\n\talias = \"%s\"\n}\n\n", newProvider, newProvider))
+		p := strings.Split(newProvider, "/")[0]
+		builder.WriteString(fmt.Sprintf("\t\t%s = {\n\t\t\tsource = \"%s\"\n\t\t}\n", p, newProvider))
 	}
+	builder.WriteString(fmt.Sprintf("\t}\n}\n"))
+
+	// write out the resource definitions
+	// resource prov_res name {}
+	// resource prov2_res2 name2 {}
 	for _, resourceDefinition := range resourceDefinitions {
 		builder.WriteString(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))
 	}

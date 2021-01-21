@@ -23,7 +23,7 @@ func (i AWSUsersImportable) ImportFromRemote(searchId *string) []ResourceDefinit
 	out := make([]ResourceDefinition, len(usrs.Users))
 	for i, u := range usrs.Users {
 		out[i] = ResourceDefinition{
-			Provider: "aws",
+			Provider: "aws/aws",
 			Type:     "aws_iam_user",
 			Name:     *u.UserName,
 			ImportID: *u.UserName,
