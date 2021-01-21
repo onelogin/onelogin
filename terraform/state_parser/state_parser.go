@@ -84,7 +84,6 @@ func convertToHCLLine(input interface{}, indentLevel int, builder *strings.Build
 	json.Unmarshal(b, &m)
 	for k, v := range m {
 		if v != nil {
-			log.Println(v)
 			switch reflect.TypeOf(v).Kind() {
 			case reflect.String:
 				builder.WriteString(fmt.Sprintf("%s%s = %q\n", indent(indentLevel), utils.ToSnakeCase(k), v))

@@ -64,24 +64,24 @@ func TestFilterExistingDefinitions(t *testing.T) {
 				tfimportables.ResourceDefinition{Provider: "okra/okra", Name: "test", Type: "okra_saml_apps"},
 				tfimportables.ResourceDefinition{Provider: "aws/aws", Name: "test", Type: "aws_apps"},
 			},
-			ExpectedProviders: []string{"aws/aws"},
+			ExpectedProviders: []string{"onelogin/onelogin", "okra/okra", "aws/aws"},
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actualResourceDefinitions, actualProviderDefinitions := FilterExistingDefinitions(test.InputReadWriter, test.IncomingResourceDefinitions)
 			assert.Equal(t, test.ExpectedResourceDefinitions, actualResourceDefinitions)
-			assert.Equal(t, test.ExpectedProviders, actualProviderDefinitions)
+			assert.Equal(t, len(test.ExpectedProviders), len(actualProviderDefinitions))
 		})
 	}
 }
 
-func TestAppendDefinitionsToMainTF(t *testing.T) {
+func TestAddNewProvidersAndResourceHCL(t *testing.T) {
 	tests := map[string]struct {
 		TestFile                 MockFile
 		InputResourceDefinitions []tfimportables.ResourceDefinition
 		InputProviderDefinitions []string
-		ExpectedOut              []byte
+		ExpectedOut              string
 	}{
 		"it adds provider and resource to the writer": {
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
@@ -90,14 +90,12 @@ func TestAppendDefinitionsToMainTF(t *testing.T) {
 			},
 			TestFile:                 MockFile{},
 			InputProviderDefinitions: []string{"test/test", "test2/test2"},
-			ExpectedOut:              []byte("terraform {\n\trequired_providers {\n\t\ttest = {\n\t\t\tsource = \"test/test\"\n\t\t}\n\t\ttest2 = {\n\t\t\tsource = \"test2/test2\"\n\t\t}\n\t}\n}\nresource test test {}\nresource test test {}\n"),
+			ExpectedOut:              "terraform {\n\trequired_providers {\n\t\ttest = {\n\t\t\tsource = \"test/test\"\n\t\t}\n\t\ttest2 = {\n\t\t\tsource = \"test2/test2\"\n\t\t}\n\t}\n}\nresource test test {}\nresource test test {}\n",
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := make([]byte, len(test.ExpectedOut))
-			WriteHCLDefinitionHeaders(test.InputResourceDefinitions, test.InputProviderDefinitions, &test.TestFile)
-			test.TestFile.Read(actual)
+			actual := AddNewProvidersAndResourceHCL(&test.TestFile, test.InputResourceDefinitions, test.InputProviderDefinitions)
 			assert.Equal(t, test.ExpectedOut, actual)
 		})
 	}

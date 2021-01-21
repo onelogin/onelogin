@@ -13,7 +13,7 @@ import (
 // file to prevent duplicate definitions which breaks terraform import
 func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
 	resourceDefinitionsToImport := []tfimportables.ResourceDefinition{} // resource definitions not in HCL file that were included in incoming resources
-	unspecifiedProviders := []string{}                                  // providers not already in HCL file from which to import new resources
+	providerDefinitions := []string{}
 
 	// resource definition headers in HCL file like resource onelogin_apps cool_app {}
 	searchCriteria := map[string]*regexp.Regexp{
@@ -44,48 +44,50 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 			}
 		}
 	}
+
 	for _, resourceDefinition := range resources {
 		if definitionHeaderCounter["provider"][resourceDefinition.Provider] == 0 {
 			definitionHeaderCounter["provider"][resourceDefinition.Provider]++
-			unspecifiedProviders = append(unspecifiedProviders, resourceDefinition.Provider)
 		}
 		if definitionHeaderCounter["resource"][fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)] == 0 {
 			resourceDefinitionsToImport = append(resourceDefinitionsToImport, resourceDefinition)
 		}
 	}
 
-	return resourceDefinitionsToImport, unspecifiedProviders
+	for k := range definitionHeaderCounter["provider"] {
+		providerDefinitions = append(providerDefinitions, k)
+	}
+	return resourceDefinitionsToImport, providerDefinitions
 }
 
 // WriteHCLDefinitionHeaders appends empty resource definitions to the existing main.tf file so terraform import will pick them up
-func WriteHCLDefinitionHeaders(resourceDefinitions []tfimportables.ResourceDefinition, providerDefinitions []string, planFile io.Writer) error {
+func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []tfimportables.ResourceDefinition, newProviderDefinitions []string) string {
 	var builder strings.Builder
-	// Write out the provider requirements. No version, so it'll get the latest.
-	// terraform {
-	//   required_providers = {
-	//     prov = {
-	//       source = "prov/prov"
-	//     }
-	//     prov2 = {
-	//       source = "prov2/prov2"
-	//     }
-	//   }
-	// }
+	re := regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`)
+
 	builder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
-	for _, newProvider := range providerDefinitions {
+	for _, newProvider := range newProviderDefinitions {
 		p := strings.Split(newProvider, "/")[0]
 		builder.WriteString(fmt.Sprintf("\t\t%s = {\n\t\t\tsource = \"%s\"\n\t\t}\n", p, newProvider))
 	}
 	builder.WriteString(fmt.Sprintf("\t}\n}\n"))
 
-	// write out the resource definitions
-	// resource prov_res name {}
-	// resource prov2_res2 name2 {}
-	for _, resourceDefinition := range resourceDefinitions {
+	scanner := bufio.NewScanner(planFile)
+	shouldRead := false
+	for scanner.Scan() {
+		t := scanner.Text()
+		m := re.FindStringSubmatch(t)
+		if len(m) != 0 {
+			shouldRead = true
+		}
+		if shouldRead {
+			builder.WriteString(fmt.Sprintf("%s\n", t))
+		}
+	}
+
+	for _, resourceDefinition := range newResourceDefinitions {
 		builder.WriteString(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))
 	}
-	if _, err := planFile.Write([]byte(builder.String())); err != nil {
-		return err
-	}
-	return nil
+
+	return builder.String()
 }

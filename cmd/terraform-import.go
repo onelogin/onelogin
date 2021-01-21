@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/onelogin/onelogin/clients"
@@ -80,12 +81,19 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 		log.Fatalln("Unable to open main.tf ", err)
 	}
 
+	pfReader, err := ioutil.ReadAll(planFile)
+	if err != nil {
+		planFile.Close()
+		log.Fatalln("Unable to read from main.tf ", err)
+	}
+
 	clientList := clients.New(clientConfigs)
 	importables := tfimportables.New(clientList)
 	importable := importables.GetImportable(strings.ToLower(args[0]))
 
+	pfReader1 := bytes.NewReader(pfReader)
 	resourceDefinitionsFromRemote := importable.ImportFromRemote(searchID)
-	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(planFile, resourceDefinitionsFromRemote)
+	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(pfReader1, resourceDefinitionsFromRemote)
 	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
 		planFile.Close()
@@ -106,7 +114,11 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 		}
 	}
 
-	if err := tfimport.WriteHCLDefinitionHeaders(newResourceDefinitions, newProviderDefinitions, planFile); err != nil {
+	pfReader2 := bytes.NewReader(pfReader)
+	newHCL := tfimport.AddNewProvidersAndResourceHCL(pfReader2, newResourceDefinitions, newProviderDefinitions)
+
+	planFile.Seek(0, 0)
+	if _, err := planFile.Write([]byte(newHCL)); err != nil {
 		planFile.Close()
 		log.Fatal("Problem creating import file", err)
 	}

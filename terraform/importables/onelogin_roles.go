@@ -53,5 +53,12 @@ func (i OneloginRolesImportable) ImportFromRemote(searchId *string) []ResourceDe
 }
 
 func (i OneloginRolesImportable) HCLShape() interface{} {
-	return &roles.Role{}
+	return &Role{}
+}
+
+type Role struct {
+	Name   *string `json:"name,omitempty"`
+	Admins []int32 `json:"admins,omitempty"`
+	Apps   []int32 `json:"apps,omitempty"`
+	Users  []int32 `json:"users,omitempty"`
 }
