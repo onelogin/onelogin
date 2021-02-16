@@ -3,10 +3,11 @@ package tfimport
 import (
 	"bufio"
 	"fmt"
-	"github.com/onelogin/onelogin/terraform/importables"
 	"io"
 	"regexp"
 	"strings"
+
+	tfimportables "github.com/onelogin/onelogin/terraform/importables"
 )
 
 // compares incoming resources from remote to what is already defined in the main.tf
@@ -63,8 +64,11 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 // WriteHCLDefinitionHeaders appends empty resource definitions to the existing main.tf file so terraform import will pick them up
 func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []tfimportables.ResourceDefinition, newProviderDefinitions []string) string {
 	var builder strings.Builder
-	re := regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`)
+	re := regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z0-9\_\-]*[0-9]*)\s?\{`)
 
+	// builder represents the new state of our .tf file copied over from the existing tf file
+
+	// we'll add the provider source headers for any new providers we dont know about
 	builder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
 	for _, newProvider := range newProviderDefinitions {
 		p := strings.Split(newProvider, "/")[0]
@@ -72,6 +76,7 @@ func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []
 	}
 	builder.WriteString(fmt.Sprintf("\t}\n}\n"))
 
+	// then we scan the existing .tf file reading in all the existing lines to our new copy (the string builder)
 	scanner := bufio.NewScanner(planFile)
 	shouldRead := false
 	for scanner.Scan() {
@@ -85,9 +90,11 @@ func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []
 		}
 	}
 
+	// finally we add the resource xxx xxx {} lines for the resources we want to import
 	for _, resourceDefinition := range newResourceDefinitions {
 		builder.WriteString(fmt.Sprintf("resource %s %s {}\n", resourceDefinition.Type, resourceDefinition.Name))
 	}
 
+	// this is the representation of the new state of the .tf file with empty resource headers ready for import
 	return builder.String()
 }
