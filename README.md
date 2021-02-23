@@ -14,10 +14,9 @@ Running this command will do the following:
   4. Using .tfstate, update main.tf to fill in the editable fields of the resource
 
 ## Usage
-This assumes you have Terraform installed and the OneLogin provider side-loaded.
-The OneLogin Terraform provider is still in beta. If you'd like to use the beta [see this guide](https://github.com/onelogin/onelogin-terraform-provider#onelogin-terraform-provider-sdk)
+This assumes you have Terraform installed and the OneLogin provider installed or side-loaded.
 
-### Configuration
+### Configuration (Beta)
 Add your OneLogin profiles with `onelogin profiles add <profile_name>`
 
 You'll be prompted for your client_id and client_secret (obtained by creating a set of developer keys in the onelogin admin portal)
@@ -34,6 +33,8 @@ onelogin terraform-import onelogin_apps
 clone this repository
 from inside the repository `go build ./...` to create a runnable binary
 from inside the repository `go install .` to add a the runnable CLI to your GOPATH /bin directory
+
+Alternatively you may run `make install` which just runs the above commands
 
 ### Binaries
 There are binaries available for the major platforms in this project's /build directory. Download the
@@ -61,6 +62,8 @@ If you have some resources already set up in main.tf, this will merge your main.
 * `onelogin_saml_apps` => returns saml apps only
 * `onelogin_oidc_apps` => returns oidc apps only
 * `onelogin_user_mappings` => returns all user mappings
+* `onelogin_users` => returns all users
+* `onelogin_roles` => returns all roles
 
 ## Contributing
 

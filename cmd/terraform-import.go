@@ -5,19 +5,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/onelogin/onelogin/clients"
-	"github.com/onelogin/onelogin/profiles"
-	"github.com/onelogin/onelogin/terraform/import"
-	"github.com/onelogin/onelogin/terraform/importables"
-	"github.com/onelogin/onelogin/terraform/state_parser"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/onelogin/onelogin/clients"
+	"github.com/onelogin/onelogin/profiles"
+	tfimport "github.com/onelogin/onelogin/terraform/import"
+	tfimportables "github.com/onelogin/onelogin/terraform/importables"
+	stateparser "github.com/onelogin/onelogin/terraform/state_parser"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -37,6 +38,7 @@ func init() {
 			onelogin_oidc_apps     => onelogin OIDC apps only
 			onelogin_user_mappings => onelogin user mappings
 			onelogin_users         => onelogin users
+			onelogin_roles         => onelogin roles
 			aws_iam_user           => aws users`,
 		Args: cobra.MinimumNArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {

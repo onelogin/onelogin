@@ -11,3 +11,6 @@ ship:
 
 clear-tf:
 	rm -rf .terraform/ && rm .terraform.lock.hcl terraform.* main.tf
+
+install:
+	go build ./... && go install .
