@@ -24,6 +24,7 @@ import (
 func init() {
 	var (
 		autoApprove   *bool
+		outFile       *string
 		searchID      *string
 		clientConfigs clients.ClientConfigs
 	)
@@ -69,24 +70,29 @@ func init() {
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			tfImport(args, clientConfigs, *autoApprove, searchID)
+			tfImport(args, clientConfigs, *autoApprove, searchID, *outFile)
 		},
 	}
-	autoApprove = tfImportCommand.Flags().Bool("auto_approve", false, "Skip confirmation of resource import")
-	searchID = tfImportCommand.Flags().String("id", "", "Import one resource by id")
+	autoApprove = tfImportCommand.Flags().BoolP("auto_approve", "a", false, "Skip confirmation of resource import")
+	outFile = tfImportCommand.Flags().StringP("output", "o", "", "Output filename")
+	searchID = tfImportCommand.Flags().StringP("id", "i", "", "Import one resource by id")
 	rootCmd.AddCommand(tfImportCommand)
 }
 
-func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bool, searchID *string) {
-	planFile, err := os.OpenFile(filepath.Join("main.tf"), os.O_RDWR|os.O_CREATE, 0600)
+func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bool, searchID *string, outFile string) {
+	sourceName := args[0]
+	if outFile == "" {
+		outFile = fmt.Sprintf("%s.tf", strings.Split(sourceName, "_")[0])
+	}
+	planFile, err := os.OpenFile(filepath.Join(outFile), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		log.Fatalln("Unable to open main.tf ", err)
+		log.Fatalln("Unable to create desired tf file ", err)
 	}
 
 	pfReader, err := ioutil.ReadAll(planFile)
 	if err != nil {
 		planFile.Close()
-		log.Fatalln("Unable to read from main.tf ", err)
+		log.Fatalln("Unable to read from tf file ", err)
 	}
 
 	clientList := clients.New(clientConfigs)
@@ -95,7 +101,7 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 
 	pfReader1 := bytes.NewReader(pfReader)
 	resourceDefinitionsFromRemote := importable.ImportFromRemote(searchID)
-	newResourceDefinitions, newProviderDefinitions := tfimport.FilterExistingDefinitions(pfReader1, resourceDefinitionsFromRemote)
+	newResourceDefinitions, newProviderDefinitions := tfimport.DetermineNewResourcesAndProviders(pfReader1, resourceDefinitionsFromRemote)
 	if len(newResourceDefinitions) == 0 {
 		fmt.Println("No new resources to import from remote")
 		planFile.Close()
@@ -129,7 +135,7 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 	// #nosec G204
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		if err := planFile.Close(); err != nil {
-			log.Fatal("Problem writing to main.tf", err)
+			log.Fatal("Problem writing to tf file ", err)
 		}
 		log.Fatal("Problem executing terraform init", err)
 	}
@@ -165,7 +171,7 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 	_, err = planFile.Write(buffer)
 	if err != nil {
 		planFile.Close()
-		fmt.Println("ERROR Writing Final main.tf", err)
+		fmt.Println("ERROR Writing Final tf file ", err)
 	}
 
 	if err := planFile.Close(); err != nil {

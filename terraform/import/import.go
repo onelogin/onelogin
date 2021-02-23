@@ -10,43 +10,40 @@ import (
 	tfimportables "github.com/onelogin/onelogin/terraform/importables"
 )
 
-// compares incoming resources from remote to what is already defined in the main.tf
-// file to prevent duplicate definitions which breaks terraform import
-func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
-	resourceDefinitionsToImport := []tfimportables.ResourceDefinition{} // resource definitions not in HCL file that were included in incoming resources
-	providerDefinitions := []string{}
+var providerRegex *regexp.Regexp = regexp.MustCompile(`^\s*?source\s?=\s?"[a-zA-Z]+\/[a-zA-Z]+"?`)
+var resourceRegex *regexp.Regexp = regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z0-9\_\-]*[0-9]*)\s?\{`)
 
-	// resource definition headers in HCL file like resource onelogin_apps cool_app {}
-	searchCriteria := map[string]*regexp.Regexp{
-		"provider": regexp.MustCompile(`^\s*?source\s?=\s?"[a-zA-Z]+\/[a-zA-Z]+"?`),
-		"resource": regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z\_\-]*[0-9]*)\s?\{`),
-	}
+func providerFromRegexMatches(matches []string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(strings.Split(matches[0], "=")[1], "\"", ""), " ", "")
+}
 
+func resourceFromRegexMatches(matches []string) string {
+	return fmt.Sprintf("%s.%s", matches[len(matches)-2], matches[len(matches)-1])
+}
+
+// DetermineNewResourcesAndProviders checks resource list from remote and cross references existing tf plan file to see which new resources and providers need to be added and imported
+func DetermineNewResourcesAndProviders(planFile io.Reader, resourcesFromRemote []tfimportables.ResourceDefinition) ([]tfimportables.ResourceDefinition, []string) {
 	// running tab of provider and resource definitions in HCL file
-	definitionHeaderCounter := map[string]map[string]int{
-		"provider": map[string]int{},
-		"resource": map[string]int{},
-	}
+	definitionHeaderCounter := map[string]map[string]int{"provider": {}, "resource": {}}
 
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(planFile)
 	for scanner.Scan() {
-		t := scanner.Text()
-		for regexName, r := range searchCriteria {
-			definitionHeaderLine := r.FindStringSubmatch(t)
-			if len(definitionHeaderLine) > 0 {
-				var definitionKey string
-				if regexName == "provider" {
-					definitionKey = strings.ReplaceAll(strings.ReplaceAll(strings.Split(t, "=")[1], "\"", ""), " ", "")
-				}
-				if regexName == "resource" {
-					definitionKey = fmt.Sprintf("%s.%s", definitionHeaderLine[len(definitionHeaderLine)-2], definitionHeaderLine[len(definitionHeaderLine)-1])
-				}
-				definitionHeaderCounter[regexName][definitionKey]++
-			}
+		line := scanner.Text()
+		providerLineMatches := providerRegex.FindStringSubmatch(line)
+		resourceLineMatches := resourceRegex.FindStringSubmatch(line)
+		if len(providerLineMatches) > 0 {
+			definitionKey := providerFromRegexMatches(providerLineMatches)
+			definitionHeaderCounter["provider"][definitionKey]++
+		}
+		if len(resourceLineMatches) > 0 {
+			definitionKey := resourceFromRegexMatches(resourceLineMatches)
+			definitionHeaderCounter["resource"][definitionKey]++
 		}
 	}
 
-	for _, resourceDefinition := range resources {
+	// loop over all resources from remote and any that we dont see in the plan file should be tallied and added as a definition to import
+	resourceDefinitionsToImport := []tfimportables.ResourceDefinition{}
+	for _, resourceDefinition := range resourcesFromRemote {
 		if definitionHeaderCounter["provider"][resourceDefinition.Provider] == 0 {
 			definitionHeaderCounter["provider"][resourceDefinition.Provider]++
 		}
@@ -55,18 +52,16 @@ func FilterExistingDefinitions(f io.Reader, resources []tfimportables.ResourceDe
 		}
 	}
 
-	for k := range definitionHeaderCounter["provider"] {
-		providerDefinitions = append(providerDefinitions, k)
+	providerDefinitions := []string{}
+	for providerName := range definitionHeaderCounter["provider"] {
+		providerDefinitions = append(providerDefinitions, providerName)
 	}
 	return resourceDefinitionsToImport, providerDefinitions
 }
 
-// WriteHCLDefinitionHeaders appends empty resource definitions to the existing main.tf file so terraform import will pick them up
+// AddNewProvidersAndResourceHCL appends empty resource definitions to the existing main.tf file so terraform import will pick them up
 func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []tfimportables.ResourceDefinition, newProviderDefinitions []string) string {
-	var builder strings.Builder
-	re := regexp.MustCompile(`(\w*resource\w*)\s([a-zA-Z\_\-]*)\s([a-zA-Z0-9\_\-]*[0-9]*)\s?\{`)
-
-	// builder represents the new state of our .tf file copied over from the existing tf file
+	var builder strings.Builder // builder represents the new state of our .tf file copied over from the existing tf file
 
 	// we'll add the provider source headers for any new providers we dont know about
 	builder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
@@ -81,7 +76,7 @@ func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []
 	shouldRead := false
 	for scanner.Scan() {
 		t := scanner.Text()
-		m := re.FindStringSubmatch(t)
+		m := resourceRegex.FindStringSubmatch(t)
 		if len(m) != 0 {
 			shouldRead = true
 		}
