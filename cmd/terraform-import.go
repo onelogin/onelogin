@@ -81,10 +81,12 @@ func init() {
 
 func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bool, searchID *string, outFile string) {
 	sourceName := args[0]
+	workingDir, _ := os.Getwd()
 	if outFile == "" {
 		outFile = fmt.Sprintf("%s.tf", strings.Split(sourceName, "_")[0])
 	}
-	planFile, err := os.OpenFile(filepath.Join(outFile), os.O_RDWR|os.O_CREATE, 0600)
+	// #nosec G304 forcing the file to be created in the working directory
+	planFile, err := os.OpenFile(filepath.Join(workingDir, outFile), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatalln("Unable to create desired tf file ", err)
 	}
@@ -132,7 +134,7 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 	}
 
 	log.Println("Initializing Terraform with 'terraform init'...")
-	// #nosec G204
+	// #nosec G204 running prescribed terraform command
 	if err := exec.Command("terraform", "init").Run(); err != nil {
 		if err := planFile.Close(); err != nil {
 			log.Fatal("Problem writing to tf file ", err)
@@ -143,7 +145,7 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 	for i, resourceDefinition := range newResourceDefinitions {
 		resourceName := fmt.Sprintf("%s.%s", resourceDefinition.Type, resourceDefinition.Name)
 		id := resourceDefinition.ImportID
-		// #nosec G204
+		// #nosec G204 running prescribed terraform command
 		cmd := exec.Command("terraform", "import", resourceName, id)
 		log.Printf("Importing resource %d", i+1)
 		if err := cmd.Run(); err != nil {
