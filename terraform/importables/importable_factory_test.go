@@ -12,13 +12,17 @@ func TestGetImportable(t *testing.T) {
 		OneLoginClientID:     "test",
 		OneLoginClientSecret: "test",
 		OneLoginURL:          "test.com",
+		OktaOrgName:          "org",
+		OktaBaseURL:          "org.org",
+		OktaAPIToken:         "t0k3n",
 	})
-	importableNames := [6]string{
+	importableNames := [7]string{
 		"onelogin_apps",
 		"onelogin_users",
 		"onelogin_apps",
 		"onelogin_user_mappings",
 		"onelogin_roles",
+		"okta_apps",
 		"aws_iam_user",
 	}
 	tests := map[string]struct {

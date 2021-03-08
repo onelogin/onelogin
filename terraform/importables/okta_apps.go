@@ -14,11 +14,10 @@ type OktaAppQuerier interface {
 }
 
 type OktaAppsImportable struct {
-	SearchID string
-	Service  OktaAppQuerier
+	Service OktaAppQuerier
 }
 
-func (i OktaAppsImportable) ImportFromRemote() []ResourceDefinition {
+func (i OktaAppsImportable) ImportFromRemote(searchId *string) []ResourceDefinition {
 	apps := i.getAllApps()
 	rd := assembleOktaResourceDefinitions(apps)
 	return rd
@@ -27,8 +26,10 @@ func (i OktaAppsImportable) ImportFromRemote() []ResourceDefinition {
 func assembleOktaResourceDefinitions(allApps []okta.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, a := range allApps {
-		resourceDefinition := ResourceDefinition{Provider: "okta"}
-		// there's more but this is good 'nuff for the hackathon lol
+		resourceDefinition := ResourceDefinition{
+			Provider: "oktadeveloper/okta",
+			ImportID: a.(*okta.Application).Id,
+		}
 		switch a.(*okta.Application).SignOnMode {
 		case "OPENID_CONNECT":
 			resourceDefinition.Type = "okta_app_oauth"
@@ -37,7 +38,7 @@ func assembleOktaResourceDefinitions(allApps []okta.App) []ResourceDefinition {
 		default:
 			resourceDefinition.Type = "okta_app_basic_auth"
 		}
-		resourceDefinition.Name = fmt.Sprintf("%s-%s", utils.ToSnakeCase(resourceDefinition.Type), a.(*okta.Application).Id)
+		resourceDefinition.Name = fmt.Sprintf("%s_%s-%s", utils.ToSnakeCase(resourceDefinition.Type), utils.ToSnakeCase(utils.ReplaceSpecialChar(a.(*okta.Application).Label, "")), a.(*okta.Application).Id)
 		resourceDefinitions[i] = resourceDefinition
 	}
 	return resourceDefinitions

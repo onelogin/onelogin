@@ -51,3 +51,25 @@ func TestAwsIamClient(t *testing.T) {
 		})
 	}
 }
+
+func TestOktaClient(t *testing.T) {
+	tests := map[string]struct {
+		Configs ClientConfigs
+	}{
+		"It initializes and memoizes the client": {
+			Configs: ClientConfigs{
+				OktaOrgName:  "org",
+				OktaBaseURL:  "org.org",
+				OktaAPIToken: "t0k3n",
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			clnts := New(test.Configs)
+			clnts.OktaClient()                // instantiate and store address of okta client
+			clnt := clnts.OktaClient()        // retrieves that address
+			assert.Equal(t, clnt, clnts.Okta) // retrieved address should be the memoized address
+		})
+	}
+}

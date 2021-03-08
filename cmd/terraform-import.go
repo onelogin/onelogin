@@ -3,22 +3,14 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/okta/okta-sdk-golang/v2/okta"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/onelogin/onelogin-go-sdk/pkg/client"
-	"github.com/onelogin/onelogin/profiles"
-	"github.com/onelogin/onelogin/terraform/import"
-
-	"github.com/onelogin/onelogin/terraform/importables"
 
 	"github.com/onelogin/onelogin/clients"
 	"github.com/onelogin/onelogin/profiles"
@@ -31,11 +23,10 @@ import (
 
 func init() {
 	var (
-		autoApprove    *bool
-		outFile        *string
-		searchID       *string
-		clientConfigs  clients.ClientConfigs
-		profileService profiles.ProfileService
+		autoApprove   *bool
+		outFile       *string
+		searchID      *string
+		clientConfigs clients.ClientConfigs
 	)
 	var tfImportCommand = &cobra.Command{
 		Use:   "terraform-import",
@@ -63,14 +54,12 @@ func init() {
 					StorageMedia: configFile,
 				},
 			}
-			profileService = profiles.ProfileService{Repository: profiles.FileRepository{StorageMedia: configFile}}
-			return nil
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-			clientConfig := client.APIClientConfig{Timeout: 5}
 			profile := profileService.GetActive()
 			clientConfigs = clients.ClientConfigs{
-				AwsRegion: os.Getenv("AWS_REGION"),
+				AwsRegion:    os.Getenv("AWS_REGION"),
+				OktaOrgName:  os.Getenv("OKTA_ORG_NAME"),
+				OktaBaseURL:  os.Getenv("OKTA_BASE_URL"),
+				OktaAPIToken: os.Getenv("OKTA_API_TOKEN"),
 			}
 			if profile == nil {
 				fmt.Println("No active profile detected. Authenticating with environment variables")
@@ -79,25 +68,9 @@ func init() {
 				clientConfigs.OneLoginURL = os.Getenv("ONELOGIN_OAPI_URL")
 			} else {
 				fmt.Println("Using profile", (*profile).Name)
-				clientConfig.ClientID = (*profile).ClientID
-				clientConfig.ClientSecret = (*profile).ClientSecret
-				clientConfig.Url = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
-			}
-			oneloginClient, err := client.NewClient(&clientConfig)
-			if err != nil {
-				log.Println("[Warning] Unable to connect to OneLogin!", err)
-			}
-			_, oktaClient, err := okta.NewClient(context.TODO(), okta.WithOrgUrl(fmt.Sprintf("https://%s.%s", os.Getenv("OKTA_ORG_NAME"), os.Getenv("OKTA_BASE_URL"))), okta.WithToken(os.Getenv("OKTA_API_TOKEN")))
-			if err != nil {
-				log.Println("[Warning] Unable to connect to Okta!", err)
-			}
-			// initalize other clients to inject into respective importable services here
-			importables := map[string]tfimportables.Importable{
-				"okta_apps":              tfimportables.OktaAppsImportable{Service: oktaClient.Application, SearchID: *searchId},
-				"onelogin_apps":          tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId},
-				"onelogin_saml_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_saml_apps"},
-				"onelogin_oidc_apps":     tfimportables.OneloginAppsImportable{Service: oneloginClient.Services.AppsV2, SearchID: *searchId, AppType: "onelogin_oidc_apps"},
-				"onelogin_user_mappings": tfimportables.OneloginUserMappingsImportable{Service: oneloginClient.Services.UserMappingsV2, SearchID: *searchId},
+				clientConfigs.OneLoginClientID = (*profile).ClientID
+				clientConfigs.OneLoginClientSecret = (*profile).ClientSecret
+				clientConfigs.OneLoginURL = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
