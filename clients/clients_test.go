@@ -20,10 +20,10 @@ func TestOneLoginClient(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			clnts := New(test.Configs)
-			clnts.OneLoginClient()                // instantiate and store address of aws client
-			clnt := clnts.OneLoginClient()        // retrieves that address
-			assert.Equal(t, clnt, clnts.OneLogin) // retrieved address should be the memoized address
+			clients := New(test.Configs)
+			clients.OneLoginClient()                // instantiate and store address of aws client
+			clnt := clients.OneLoginClient()        // retrieves that address
+			assert.Equal(t, clnt, clients.OneLogin) // retrieved address should be the memoized address
 
 		})
 	}
@@ -44,10 +44,10 @@ func TestAwsIamClient(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			clnts := New(test.Configs)
-			clnts.AwsIamClient()                // instantiate and store address of aws client
-			clnt := clnts.AwsIamClient()        // retrieves that address
-			assert.Equal(t, clnt, clnts.AwsIam) // retrieved address should be the memoized address
+			clients := New(test.Configs)
+			clients.AwsIamClient()                // instantiate and store address of aws client
+			clnt := clients.AwsIamClient()        // retrieves that address
+			assert.Equal(t, clnt, clients.AwsIam) // retrieved address should be the memoized address
 		})
 	}
 }
@@ -66,10 +66,10 @@ func TestOktaClient(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			clnts := New(test.Configs)
-			clnts.OktaClient()                // instantiate and store address of okta client
-			clnt := clnts.OktaClient()        // retrieves that address
-			assert.Equal(t, clnt, clnts.Okta) // retrieved address should be the memoized address
+			clients := New(test.Configs)
+			clients.OktaClient()                // instantiate and store address of okta client
+			clnt := clients.OktaClient()        // retrieves that address
+			assert.Equal(t, clnt, clients.Okta) // retrieved address should be the memoized address
 		})
 	}
 }
