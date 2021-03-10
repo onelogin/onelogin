@@ -32,6 +32,9 @@ func (imf *ImportableList) GetImportable(importableType string) Importable {
 		case "aws_iam_user":
 			remoteClient := imf.Clients.AwsIamClient()
 			imf.importables[importableType] = &AWSUsersImportable{Service: remoteClient}
+		case "okta_apps", "okta_app_oauth", "okta_app_saml", "okta_app_basic_auth":
+			remoteClient := imf.Clients.OktaClient()
+			imf.importables[importableType] = &OktaAppsImportable{Service: remoteClient.Application}
 		case "onelogin_users":
 			remoteClient := imf.Clients.OneLoginClient()
 			imf.importables[importableType] = &OneloginUsersImportable{Service: remoteClient.Services.UsersV2}

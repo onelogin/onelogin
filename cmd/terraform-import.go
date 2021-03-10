@@ -40,6 +40,7 @@ func init() {
 			onelogin_user_mappings => onelogin user mappings
 			onelogin_users         => onelogin users
 			onelogin_roles         => onelogin roles
+			okta_apps              => okta apps
 			aws_iam_user           => aws users`,
 		Args: cobra.MinimumNArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -55,7 +56,10 @@ func init() {
 			}
 			profile := profileService.GetActive()
 			clientConfigs = clients.ClientConfigs{
-				AwsRegion: os.Getenv("AWS_REGION"),
+				AwsRegion:    os.Getenv("AWS_REGION"),
+				OktaOrgName:  os.Getenv("OKTA_ORG_NAME"),
+				OktaBaseURL:  os.Getenv("OKTA_BASE_URL"),
+				OktaAPIToken: os.Getenv("OKTA_API_TOKEN"),
 			}
 			if profile == nil {
 				fmt.Println("No active profile detected. Authenticating with environment variables")

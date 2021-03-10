@@ -66,7 +66,7 @@ func AddNewProvidersAndResourceHCL(planFile io.Reader, newResourceDefinitions []
 	// we'll add the provider source headers for any new providers we dont know about
 	builder.WriteString(fmt.Sprintf("terraform {\n\trequired_providers {\n"))
 	for _, newProvider := range newProviderDefinitions {
-		p := strings.Split(newProvider, "/")[0]
+		p := strings.Split(newProvider, "/")[1]
 		builder.WriteString(fmt.Sprintf("\t\t%s = {\n\t\t\tsource = \"%s\"\n\t\t}\n", p, newProvider))
 	}
 	builder.WriteString(fmt.Sprintf("\t}\n}\n"))
