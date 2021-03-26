@@ -34,14 +34,16 @@ func init() {
 		Long: `Uses Terraform Import to collect resources from a remote and
 		create new .tfstate and .tf files so you can begin managing existing resources with Terraform.
 		Available Imports:
-			onelogin_apps          => onelogin all apps
-			onelogin_saml_apps     => onelogin SAML apps only
-			onelogin_oidc_apps     => onelogin OIDC apps only
-			onelogin_user_mappings => onelogin user mappings
-			onelogin_users         => onelogin users
-			onelogin_roles         => onelogin roles
-			okta_apps              => okta apps
-			aws_iam_user           => aws users`,
+			onelogin_apps               => onelogin all apps
+			onelogin_saml_apps          => onelogin SAML apps only
+			onelogin_oidc_apps          => onelogin OIDC apps only
+			onelogin_user_mappings      => onelogin user mappings
+			onelogin_users              => onelogin users
+			onelogin_roles              => onelogin roles
+			onelogin_smarthooks         => onelogin smarthooks
+			onelogin_smarthook_env_vars => onelogin smarthook environment variables
+			okta_apps                   => okta apps
+			aws_iam_user                => aws users`,
 		Args: cobra.MinimumNArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			configFile, err := os.OpenFile(viper.ConfigFileUsed(), os.O_RDWR, 0600)

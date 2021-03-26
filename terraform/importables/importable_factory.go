@@ -44,6 +44,12 @@ func (imf *ImportableList) GetImportable(importableType string) Importable {
 		case "onelogin_user_mappings":
 			remoteClient := imf.Clients.OneLoginClient()
 			imf.importables[importableType] = &OneloginUserMappingsImportable{Service: remoteClient.Services.UserMappingsV2}
+		case "onelogin_smarthooks":
+			remoteClient := imf.Clients.OneLoginClient()
+			imf.importables[importableType] = &OneloginSmartHooksImportable{Service: remoteClient.Services.SmartHooksV1}
+		case "onelogin_smarthook_env_vars", "onelogin_smarthook_environment_variables":
+			remoteClient := imf.Clients.OneLoginClient()
+			imf.importables[importableType] = &OneloginSmartHookEnvVarsImportable{Service: remoteClient.Services.SmartHooksEnvVarsV1}
 		case "onelogin_roles":
 			remoteClient := imf.Clients.OneLoginClient()
 			imf.importables[importableType] = &OneloginRolesImportable{Service: remoteClient.Services.RolesV1}
