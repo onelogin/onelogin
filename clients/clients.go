@@ -9,11 +9,13 @@
 package clients
 
 import (
+	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/okta/okta-sdk-golang/v2/okta"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
-
 	"log"
 )
 
@@ -21,16 +23,35 @@ import (
 type Clients struct {
 	OneLogin *client.APIClient
 	AwsIam   *iam.IAM
+	Okta     *okta.Client
 	ClientConfigs
 }
 
 type ClientConfigs struct {
 	AwsRegion                                           string
 	OneLoginClientID, OneLoginClientSecret, OneLoginURL string
+	OktaOrgName, OktaBaseURL, OktaAPIToken              string
 }
 
 func New(clientConfigs ClientConfigs) *Clients {
 	return &Clients{ClientConfigs: clientConfigs}
+}
+
+func (c *Clients) OktaClient() *okta.Client {
+	if c.Okta == nil {
+		oktaURL := fmt.Sprintf("https://%s.%s", c.ClientConfigs.OktaOrgName, c.ClientConfigs.OktaBaseURL)
+		_, oktaClient, err := okta.NewClient(
+			context.TODO(),
+			okta.WithOrgUrl(oktaURL),
+			okta.WithToken(c.ClientConfigs.OktaAPIToken),
+		)
+		if err != nil {
+			log.Fatalln("There was a problem configuring the Okta client. Ensure your Okta credentials are exported to your environment", err)
+		} else {
+			c.Okta = oktaClient
+		}
+	}
+	return c.Okta
 }
 
 // OneLoginClient creates and returns an instance of the OneLogin API client if one does not exist

@@ -25,7 +25,7 @@ func (i OneloginAppsImportable) ImportFromRemote(searchId *string) []ResourceDef
 	var remoteApps []apps.App
 	if searchId == nil || *searchId == "" {
 		fmt.Println("Collecting Apps from OneLogin...")
-		remoteApps = i.getOneLoginAppsApps()
+		remoteApps = i.getAllOneLoginApps()
 	} else {
 		fmt.Printf("Collecting App %s from OneLogin...\n", *searchId)
 		id, err := strconv.Atoi(*searchId)
@@ -38,12 +38,12 @@ func (i OneloginAppsImportable) ImportFromRemote(searchId *string) []ResourceDef
 		}
 		remoteApps = []apps.App{*app}
 	}
-	resourceDefinitions := assembleResourceDefinitions(remoteApps)
+	resourceDefinitions := assembleOneLoginResourceDefinitions(remoteApps)
 	return resourceDefinitions
 }
 
 // helper for packing apps into ResourceDefinitions
-func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
+func assembleOneLoginResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 	resourceDefinitions := make([]ResourceDefinition, len(allApps))
 	for i, app := range allApps {
 		resourceDefinition := ResourceDefinition{
@@ -65,7 +65,7 @@ func assembleResourceDefinitions(allApps []apps.App) []ResourceDefinition {
 }
 
 // Makes the HTTP call to the remote to get the apps using the given query parameters
-func (i OneloginAppsImportable) getOneLoginAppsApps() []apps.App {
+func (i OneloginAppsImportable) getAllOneLoginApps() []apps.App {
 
 	appTypeQueryMap := map[string]string{
 		"onelogin_apps":      "",

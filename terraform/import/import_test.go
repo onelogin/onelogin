@@ -1,11 +1,12 @@
 package tfimport
 
 import (
-	"github.com/onelogin/onelogin/terraform/importables"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
+
+	tfimportables "github.com/onelogin/onelogin/terraform/importables"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockFile struct {
@@ -69,7 +70,7 @@ func TestFilterExistingDefinitions(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualResourceDefinitions, actualProviderDefinitions := FilterExistingDefinitions(test.InputReadWriter, test.IncomingResourceDefinitions)
+			actualResourceDefinitions, actualProviderDefinitions := DetermineNewResourcesAndProviders(test.InputReadWriter, test.IncomingResourceDefinitions)
 			assert.Equal(t, test.ExpectedResourceDefinitions, actualResourceDefinitions)
 			assert.Equal(t, len(test.ExpectedProviders), len(actualProviderDefinitions))
 		})
