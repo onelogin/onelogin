@@ -139,8 +139,7 @@ func newHook() {
 
 		availableHookTypes := []hookType{
 			hookType{
-				Type:  "Pre-Authentication",
-				Value: "pre-authentication",
+				Type: "Pre-Authentication",
 				DefaultOptions: &smarthooks.Options{
 					RiskEnabled:          oltypes.Bool(false),
 					LocationEnabled:      oltypes.Bool(false),
@@ -148,8 +147,7 @@ func newHook() {
 				},
 			},
 			hookType{
-				Type:           "User Migration",
-				Value:          "user-migration",
+				Type:           "User-Migration",
 				DefaultOptions: &smarthooks.Options{},
 			},
 		}
