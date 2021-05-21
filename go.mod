@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/aws/aws-sdk-go v1.34.0
+	github.com/jpoles1/gopherbadger v2.4.0+incompatible // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/manifoldco/promptui v0.8.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect

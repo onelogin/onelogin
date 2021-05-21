@@ -35,12 +35,13 @@ func init() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "smarthooks",
 		Short: "Assists in managing Smart Hooks in your OneLogin account",
-		Long: `Creates a .js file with the configuration needed for a Smart Hook and its backing javascript code.
+		Long: `Creates a .js and .json file with the configuration needed for a Smart Hook and its backing javascript code.
 		Available Actions:
-			create                  => creates an empty hook.js file and hook.json file with empty required fields
-			list                    => lists the hook IDs associated to your account
-			get  [id - required]    => retrieves the hook and saves it to a hook.js and hook.json file
-			save [path - required]  => finds the hook.js and hook.json files at the specified path and prepares the hook create/update request for the API`,
+			create                   => creates an empty hook.js file and hook.json file with empty required fields
+			list                     => lists the hook IDs associated to your account
+			get    [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
+			delete [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API
+			save                     => saves the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			action = strings.ToLower(args[0])
 
@@ -249,13 +250,16 @@ func getHook(id string, client *client.APIClient) {
 	hookScriptFile.Close()
 }
 
-func saveHook(path string, client *client.APIClient) {
-	hookData, err := ioutil.ReadFile(filepath.Join(path, "hook.json"))
+func saveHook(client *client.APIClient) {
+	workingDir, _ := os.Getwd()
+	// #nosec G304 forcing the file to be created in the working directory
+	hookData, err := ioutil.ReadFile(filepath.Join(workingDir, "hook.json"))
 	if err != nil {
 		log.Fatalln("Unable to read hook.json ", err)
 	}
 
-	hookCode, err := ioutil.ReadFile(filepath.Join(path, "hook.js"))
+	// #nosec G304 forcing the file to be created in the working directory
+	hookCode, err := ioutil.ReadFile(filepath.Join(workingDir, "hook.js"))
 	if err != nil {
 		log.Fatalln("Unable to read hook.js ", err)
 	}
@@ -282,12 +286,12 @@ func saveHook(path string, client *client.APIClient) {
 	}
 	h, _ := json.Marshal(savedHook)
 
-	ioutil.WriteFile(filepath.Join(path, "hook.json"), h, 0600)
+	ioutil.WriteFile(filepath.Join(workingDir, "hook.json"), h, 0600)
 
 	savedHook.DecodeFunction()
 
 	savedHookCode := []byte(*savedHook.Function)
-	ioutil.WriteFile(filepath.Join(path, "hook.js"), savedHookCode, 0600)
+	ioutil.WriteFile(filepath.Join(workingDir, "hook.js"), savedHookCode, 0600)
 }
 
 func deleteHook(ids []string, client *client.APIClient) {
