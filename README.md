@@ -6,6 +6,26 @@
 The OneLogin CLI is your way to manage OneLogin resources such as Apps, Users, and Mappings via the Command Line.
 
 ## Features
+`onelogin profiles [action] <profile_name>`
+Maintains a listing of accounts used by the CLI in a home/.onelogin/profiles file and facilitates creating, changing, deleting, indexing, and using known configurations. You are of course, free to go and edit the profiles file yourself and use this as a way to quickly switch out your environment.
+Available Actions:
+  * use             [name - required] => CLI will use this profile's credentials in all requests to OneLogin
+  * show            [name - required] => shows information about the profile
+  * edit   (update) [name - required] => edits selected profile information
+  * remove (delete) [name - required] => removes selected profile
+  * add    (create) [name - required] => adds profile to manage
+  * list   (ls)     [name - optional] => lists managed profile that can be used. if name given, lists information about that profile
+  * which  (current)                  => returns current active profile
+
+`onelogin smarthooks [action] <id>`
+Creates a .js and .json file with the configuration needed for a Smart Hook and its backing javascript code.
+Available Actions:
+  * create                    => creates an empty hook.js file and hook.json file with empty required fields in the current working directory
+  * list                      => lists the hook IDs associated to your account
+  * OneLogin API
+  * get     [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
+  * delete  [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API
+  * 
 `terraform-import <resource>`: Import your remote resources into a local Terraform State.
 Running this command will do the following:
   1. Pull **all** your resources from the OneLogin API (remote)
@@ -13,21 +33,31 @@ Running this command will do the following:
   3. Call `terraform import` for all the apps and update the `.tfstate`
   4. Using .tfstate, update main.tf to fill in the editable fields of the resource
 
-## Usage
-This assumes you have Terraform installed and the OneLogin provider installed or side-loaded.
 
-### Configuration (Beta)
+## Profiles
 Add your OneLogin profiles with `onelogin profiles add <profile_name>`
 
 You'll be prompted for your client_id and client_secret (obtained by creating a set of developer keys in the onelogin admin portal)
 
 You can add as many profiles as you like, and you can switch the active profile with `onelogin profiles use <profile_name>` which will point the CLI at the active account.
 
-### Example
-Import all OneLogin apps, create a main.tf file, and establish Terraform state.
-```sh
-onelogin terraform-import onelogin_apps
-```
+## Smart Hooks
+From an empty directory, where you plan to manage your Smart Hook run:
+`onelogin smarthooks create`
+
+⚠️ &nbsp; You'll need to do this in a new directory per hook as of `v0.1.10` 
+
+Select the hook type from the propmpt and you'll be presented with 2 files `hook.json` and `hook.js`
+
+You can add package definitions (similar to how you use a `package.json`) and environment variables in the `hook.json` file as well as modify other settings like timeout and retries.
+
+`hook.js` is where the javascript code for your Smart Hook lives. You can use your favorite editor to update the code as you wish.
+
+⚠️ &nbsp; Do not remove the first line of this javascript. Smart Hooks require `exports.handler = async (context) => {}` to wrap your code. Think of this like the `main` function
+
+⚠️ &nbsp; You must also return from your code an object with the `success` node defined. In a new project, this defaults to `return {success: true}`
+
+To apply changes to your Smart Hook, call the `onelogin smarthooks save` command from inside the directory containing `hook.js` and `hook.json`
 
 Create an empty [Smart Hook](https://developers.onelogin.com/api-docs/2/smart-hooks/overview) project
 ```sh
@@ -38,6 +68,13 @@ Update a [Smart Hook](https://developers.onelogin.com/api-docs/2/smart-hooks/ove
 ```sh
 onelogin smarthooks save
 ```
+
+## Terraform Import
+Import all OneLogin apps, create a main.tf file, and establish Terraform state.
+```sh
+onelogin terraform-import onelogin_apps
+```
+
 
 ### Install From Source - Requires Go
 clone this repository
@@ -56,24 +93,6 @@ binary for your system and add it to your /bin folder or run it directly per you
 * `linux-386`     => linux 32 bit
 * `linux-amd64`   => linux 64 bit
 
-## Smart Hook Manager
-### Use
-From an empty directory, where you plan to manage your Smart Hook run:
-`onelogin smarthooks create`
-
-You'll need to do this in a new directory per hook as of `v0.1.10` 
-
-Select the hook type from the propmpt and you'll be presented with 2 files `hook.json` and `hook.js`
-
-You can add package definitions (similar to how you use a `package.json`) and environment variables in the `hook.json` file as well as modify other settings like timeout and retries.
-
-`hook.js` is where the javascript code for your Smart Hook lives. You can use your favorite editor to update the code as you wish.
-
-⚠️ Do not remove the first line of this javascript. Smart Hooks require `exports.handler = async (context) => {}` to wrap your code. Think of this like the `main` function
-
-⚠️ You must also return from your code an object with the `success` node defined. In a new project, this defaults to `return {success: true}`
-
-To apply changes to your Smart Hook, call the `onelogin smarthooks save` command from inside the directory containing `hook.js` and `hook.json`
 
 ## Terraform Importer
 
@@ -86,15 +105,9 @@ This will capture the state of your remote in its entirety
 
 If you have some resources already set up in main.tf, this will merge your main.tf with resources from the remote
 
-### Supported Importable Resources
-* `onelogin_apps` => returns all apps
-* `onelogin_saml_apps` => returns saml apps only
-* `onelogin_oidc_apps` => returns oidc apps only
-* `onelogin_user_mappings` => returns all user mappings
-* `onelogin_users` => returns all users
-* `onelogin_roles` => returns all roles
-
 ## Contributing
+
+Fork this repository, make your change and submit a PR to this repository against the `develop` branch.
 
 ### Terraform Importer
 To add an importable resource, do these things:
