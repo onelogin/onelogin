@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
@@ -82,6 +83,11 @@ func init() {
 					log.Fatalf("One argument is required for this action!")
 				}
 				f(args[1], oneloginClient)
+			} else if f, ok := legalActions[action].(func(s []string, client *client.APIClient)); ok {
+				if len(args) < 2 {
+					log.Fatalf("At least one argument is required for this action!")
+				}
+				f(args[1:], oneloginClient)
 			} else if f, ok := legalActions[action].(func(client *client.APIClient)); ok {
 				f(oneloginClient)
 			} else if f, ok := legalActions[action].(func()); ok {
@@ -250,9 +256,19 @@ func saveHook(path string, client *client.APIClient) {
 	ioutil.WriteFile(filepath.Join(path, "hook.js"), savedHookCode, 0600)
 }
 
-func deleteHook(id string, client *client.APIClient) {
-	if err := client.Services.SmartHooksV1.Destroy(id); err != nil {
-		log.Fatalln("Unable to delete smart hook", id, err)
+func deleteHook(ids []string, client *client.APIClient) {
+	wg := sync.WaitGroup{}
+	for _, id := range ids {
+		wg.Add(1)
+		go func(id string, wg *sync.WaitGroup) {
+			defer wg.Done()
+			if err := client.Services.SmartHooksV1.Destroy(id); err != nil {
+				log.Println("Unable to delete hook with id: ", id)
+			} else {
+				log.Println("Successfully able to delete hook with id: ", id)
+			}
+		}(id, &wg)
 	}
-	log.Println("Successfully deleted smart hook", id)
+	wg.Wait()
+	log.Println("Finished deleting hooks")
 }
