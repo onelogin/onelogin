@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/manifoldco/promptui"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/smarthooks"
@@ -64,7 +65,6 @@ func init() {
 				clientConfigs.ClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
 				clientConfigs.Url = os.Getenv("ONELOGIN_OAPI_URL")
 			} else {
-				fmt.Println("Using profile", (*profile).Name)
 				clientConfigs.ClientID = (*profile).ClientID
 				clientConfigs.ClientSecret = (*profile).ClientSecret
 				clientConfigs.Url = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
@@ -131,18 +131,54 @@ func newHook() {
 	}
 }`)
 
+		type hookType struct {
+			Type           string
+			Value          string
+			DefaultOptions *smarthooks.Options
+		}
+
+		availableHookTypes := []hookType{
+			hookType{
+				Type:  "Pre-Authentication",
+				Value: "pre-authentication",
+				DefaultOptions: &smarthooks.Options{
+					RiskEnabled:          oltypes.Bool(false),
+					LocationEnabled:      oltypes.Bool(false),
+					MFADeviceInfoEnabled: oltypes.Bool(false),
+				},
+			},
+			hookType{
+				Type:           "User Migration",
+				Value:          "user-migration",
+				DefaultOptions: &smarthooks.Options{},
+			},
+		}
+
+		templates := promptui.SelectTemplates{
+			Active:   `🎣 {{ .Type | cyan | bold }}`,
+			Inactive: `   {{ .Type | cyan }}`,
+			Selected: `{{ "✔" | green | bold }} {{ "Hook Type" | bold }}: {{ .Type | cyan }}`,
+		}
+
+		list := promptui.Select{
+			Label:     "Hook Type",
+			Items:     availableHookTypes,
+			Templates: &templates,
+		}
+
+		idx, _, err := list.Run()
+		if err != nil {
+			log.Fatalln(err)
+		}
+
 		h := smarthooks.SmartHook{
-			Type:     oltypes.String(""),
+			Type:     oltypes.String(availableHookTypes[idx].Value),
 			Function: oltypes.String(string(hookCode)),
 			Disabled: oltypes.Bool(false),
 			Runtime:  oltypes.String("nodejs12.x"),
 			Retries:  oltypes.Int32(0),
 			Timeout:  oltypes.Int32(1),
-			Options: &smarthooks.Options{
-				RiskEnabled:          oltypes.Bool(false),
-				LocationEnabled:      oltypes.Bool(false),
-				MFADeviceInfoEnabled: oltypes.Bool(false),
-			},
+			Options:  availableHookTypes[idx].DefaultOptions,
 			EnvVars:  []smarthookenvs.EnvVar{},
 			Packages: map[string]string{},
 		}
