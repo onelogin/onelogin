@@ -43,31 +43,33 @@ You can add as many profiles as you like, and you can switch the active profile 
 
 ## Smart Hooks
 From an empty directory, where you plan to manage your Smart Hook run:
-`onelogin smarthooks create`
+`onelogin smarthooks create`<br/><br/>
 
-⚠️ &nbsp; You'll need to do this in a new directory per hook as of `v0.1.10` 
+⚠️ &nbsp; You'll need to do this in a new directory per hook as of `v0.1.10` <br/><br/>
 
 Select the hook type from the propmpt and you'll be presented with 2 files `hook.json` and `hook.js`
 
 You can add package definitions (similar to how you use a `package.json`) and environment variables in the `hook.json` file as well as modify other settings like timeout and retries.
 
-`hook.js` is where the javascript code for your Smart Hook lives. You can use your favorite editor to update the code as you wish.
+`hook.js` is where the javascript code for your Smart Hook lives. You can use your favorite editor to update the code as you wish. <br/><br/>
 
-⚠️ &nbsp; Do not remove the first line of this javascript. Smart Hooks require `exports.handler = async (context) => {}` to wrap your code. Think of this like the `main` function
+⚠️ &nbsp; Do not remove the first line of this javascript. Smart Hooks use `exports.handler = async (context) => {}` as a `main` function.
 
-⚠️ &nbsp; You must also return from your code an object with the `success` node defined. In a new project, this defaults to `return {success: true}`
+⚠️ &nbsp; You must also return from your code an object with the `success` node defined. In a new project, this defaults to `return {success: true}` <br/><br/>
 
-To apply changes to your Smart Hook, call the `onelogin smarthooks save` command from inside the directory containing `hook.js` and `hook.json`
+To apply changes to your Smart Hook, call the `onelogin smarthooks save` command from inside the directory containing `hook.js` and `hook.json`<br/><br/>
 
 Create an empty [Smart Hook](https://developers.onelogin.com/api-docs/2/smart-hooks/overview) project
 ```sh
 onelogin smarthooks create
 ```
+<br/>
 
 Update a [Smart Hook](https://developers.onelogin.com/api-docs/2/smart-hooks/overview) 
 ```sh
 onelogin smarthooks save
 ```
+<br/>
 
 ## Terraform Import
 Import all OneLogin apps, create a main.tf file, and establish Terraform state.
@@ -81,7 +83,7 @@ clone this repository
 from inside the repository `go build ./...` to create a runnable binary
 from inside the repository `go install .` to add a the runnable CLI to your GOPATH /bin directory
 
-Alternatively you may run `make install` which just runs the above commands
+Alternatively you may run `make install` which just runs the above commands<br/><br/>
 
 ### Binaries
 There are binaries available for the major platforms in this project's /build directory. Download the
@@ -93,7 +95,7 @@ binary for your system and add it to your /bin folder or run it directly per you
 * `linux-386`     => linux 32 bit
 * `linux-amd64`   => linux 64 bit
 
-
+<br/><br/>
 ## Terraform Importer
 
 ### Use
@@ -104,10 +106,11 @@ You'll be prompted to confirm the number of resources to import.
 This will capture the state of your remote in its entirety
 
 If you have some resources already set up in main.tf, this will merge your main.tf with resources from the remote
-
+<br/><br/>
 ## Contributing
 
 Fork this repository, make your change and submit a PR to this repository against the `develop` branch.
+<br/>
 
 ### Terraform Importer
 To add an importable resource, do these things:
