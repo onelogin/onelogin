@@ -210,14 +210,12 @@ func getHook(id string, client *client.APIClient) {
 }
 
 func saveHook(path string, client *client.APIClient) {
-	workingDir, _ := os.Getwd()
-
-	hookData, err := ioutil.ReadFile(filepath.Join(workingDir, "hook.json"))
+	hookData, err := ioutil.ReadFile(filepath.Join(path, "hook.json"))
 	if err != nil {
 		log.Fatalln("Unable to read hook.json ", err)
 	}
 
-	hookCode, err := ioutil.ReadFile(filepath.Join(workingDir, "hook.js"))
+	hookCode, err := ioutil.ReadFile(filepath.Join(path, "hook.js"))
 	if err != nil {
 		log.Fatalln("Unable to read hook.js ", err)
 	}
@@ -244,12 +242,12 @@ func saveHook(path string, client *client.APIClient) {
 	}
 	h, _ := json.Marshal(savedHook)
 
-	ioutil.WriteFile(filepath.Join(workingDir, "hook.json"), h, 0600)
+	ioutil.WriteFile(filepath.Join(path, "hook.json"), h, 0600)
 
 	savedHook.DecodeFunction()
 
 	savedHookCode := []byte(*savedHook.Function)
-	ioutil.WriteFile(filepath.Join(workingDir, "hook.js"), savedHookCode, 0600)
+	ioutil.WriteFile(filepath.Join(path, "hook.js"), savedHookCode, 0600)
 }
 
 func deleteHook(id string, client *client.APIClient) {
