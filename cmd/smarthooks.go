@@ -37,11 +37,11 @@ func init() {
 		Short: "Assists in managing Smart Hooks in your OneLogin account",
 		Long: `Creates a .js and .json file with the configuration needed for a Smart Hook and its backing javascript code.
 		Available Actions:
-			create                   => creates an empty hook.js file and hook.json file with empty required fields
-			list                     => lists the hook IDs associated to your account
-			get    [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
-			delete [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API
-			save                     => saves the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API`,
+			create                    => creates an empty hook.js file and hook.json file with empty required fields in the current working directory
+			list                      => lists the hook IDs associated to your account
+			save                      => saves the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API
+			get     [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
+			delete  [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			action = strings.ToLower(args[0])
 
