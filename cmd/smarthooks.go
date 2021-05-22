@@ -25,7 +25,7 @@ func init() {
 		"create": newHook,    // new up a hook request boilerplate and js file
 		"list":   listHooks,  // list hook names/ids
 		"get":    getHook,    // pull down a hook by id
-		"save":   saveHook,   // create or update the hook depending on if id is given
+		"deploy": deployHook, // create or update the hook depending on if id is given
 		"delete": deleteHook, // deletes the smart hook
 	}
 
@@ -39,7 +39,7 @@ func init() {
 		Available Actions:
 			create                    => creates an empty hook.js file and hook.json file with empty required fields in the current working directory
 			list                      => lists the hook IDs associated to your account
-			save                      => saves the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API
+			deploy                    => deploys the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API
 			get     [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
 			delete  [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -250,7 +250,7 @@ func getHook(id string, client *client.APIClient) {
 	hookScriptFile.Close()
 }
 
-func saveHook(client *client.APIClient) {
+func deployHook(client *client.APIClient) {
 	workingDir, _ := os.Getwd()
 	// #nosec G304 forcing the file to be created in the working directory
 	hookData, err := ioutil.ReadFile(filepath.Join(workingDir, "hook.json"))
