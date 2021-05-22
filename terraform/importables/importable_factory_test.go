@@ -1,21 +1,23 @@
 package tfimportables
 
 import (
+	"testing"
+
 	"github.com/onelogin/onelogin/clients"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetImportable(t *testing.T) {
-	clientList := clients.New(clients.ClientConfigs{
-		AwsRegion:            "us-test-2",
-		OneLoginClientID:     "test",
-		OneLoginClientSecret: "test",
-		OneLoginURL:          "test.com",
-		OktaOrgName:          "org",
-		OktaBaseURL:          "org.org",
-		OktaAPIToken:         "t0k3n",
-	})
+	clientList := &clients.Clients{
+		ClientConfigs: clients.ClientConfigs{
+			OneLoginClientID:     "test",
+			OneLoginClientSecret: "test",
+			OneLoginURL:          "test.com",
+			OktaOrgName:          "test",
+			OktaBaseURL:          "test.com",
+			OktaAPIToken:         "test",
+		},
+	}
 	importableNames := [7]string{
 		"onelogin_apps",
 		"onelogin_users",
