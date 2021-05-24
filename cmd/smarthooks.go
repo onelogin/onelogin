@@ -6,24 +6,21 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
-	"github.com/manifoldco/promptui"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
 	"github.com/onelogin/onelogin-go-sdk/pkg/oltypes"
 	"github.com/onelogin/onelogin-go-sdk/pkg/services/smarthooks"
 	smarthookenvs "github.com/onelogin/onelogin-go-sdk/pkg/services/smarthooks/envs"
 	"github.com/onelogin/onelogin/clients"
+	"github.com/onelogin/onelogin/menu"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type hookType struct {
-	Type           string
-	DefaultOptions *smarthooks.Options
-}
 
 func init() {
 	legalActions := map[string]interface{}{
@@ -40,31 +37,19 @@ func init() {
 		oneloginClient *client.APIClient
 	)
 
-	availableHookTypes := []hookType{
+	availableHookTypes := []menu.Option{
 		{
-			Type: "Pre-Authentication",
-			DefaultOptions: &smarthooks.Options{
+			Name: "Pre-Authentication",
+			Value: &smarthooks.Options{
 				RiskEnabled:          oltypes.Bool(false),
 				LocationEnabled:      oltypes.Bool(false),
 				MFADeviceInfoEnabled: oltypes.Bool(false),
 			},
 		},
 		{
-			Type:           "User-Migration",
-			DefaultOptions: &smarthooks.Options{},
+			Name:  "User-Migration",
+			Value: &smarthooks.Options{},
 		},
-	}
-
-	templates := promptui.SelectTemplates{
-		Active:   `🎣  {{ .Type | cyan | bold }}`,
-		Inactive: `    {{ .Type | cyan }}`,
-		Selected: `{{ "✔" | green | bold }} {{ "Hook Type" | bold }}: {{ .Type | cyan }}`,
-	}
-
-	list := promptui.Select{
-		Label:     "Hook Type",
-		Items:     availableHookTypes,
-		Templates: &templates,
 	}
 
 	smarthooksCommand := &cobra.Command{
@@ -105,12 +90,12 @@ func init() {
 				f(oneloginClient)
 			} else if f, ok := legalActions[action].(func()); ok {
 				f()
-			} else if f, ok := legalActions[action].(func(name string, defaultHookConfig hookType)); ok {
-				idx, _, _ := list.Run()
+			} else if f, ok := legalActions[action].(func(name string, defaultHookConfig menu.Option)); ok {
+				selectedHookType := menu.Run("Hook Type", "🎣", availableHookTypes)
 				if len(args) < 2 {
-					f(*smarthookName, availableHookTypes[idx])
+					f(*smarthookName, selectedHookType)
 				} else {
-					f(args[1], availableHookTypes[idx])
+					f(args[1], selectedHookType)
 				}
 			} else {
 				log.Fatalln("Unable to determine function to call")
@@ -118,33 +103,60 @@ func init() {
 		},
 	}
 	smarthookName = smarthooksCommand.Flags().StringP("name", "n", "unnamed", "Smart Hook name")
-
 	rootCmd.AddCommand(smarthooksCommand)
 }
 
-func newHook(name string, defaultHookConfig hookType) {
-	hookType := strings.ToLower(defaultHookConfig.Type)
+func newHook(name string, selectedHookType menu.Option) {
+	menuOption := strings.ToLower(selectedHookType.Name)
 
-	name = fmt.Sprintf("%s-%s", name, hookType)
+	name = fmt.Sprintf("%s-%s", name, menuOption)
 	workingDir, _ := os.Getwd()
+	gitignore := filepath.Join(workingDir, fmt.Sprintf("%s/.gitignore", name))
 	jsFileName := filepath.Join(workingDir, fmt.Sprintf("%s/hook.js", name))
 	jsonFileName := filepath.Join(workingDir, fmt.Sprintf("%s/hook.json", name))
+	envFileName := filepath.Join(workingDir, fmt.Sprintf("%s/.test-env", name))
+	pkgFileName := filepath.Join(workingDir, fmt.Sprintf("%s/package.json", name))
 
 	// #nosec G304 forcing the file to be created in the working directory
 	err := os.Mkdir(name, 0750)
 	if err != nil {
 		log.Fatalln("Unable to create project folder")
 	}
+	os.Chdir(name)
 	// #nosec G304 forcing the file to be created in the working directory
 	hookJSONFile, err := os.OpenFile(jsonFileName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
-		log.Fatalln("Unable to read hook.json ", err)
+		log.Fatalln("Unable to create hook.json ", err)
 	}
 
 	// #nosec G304 forcing the file to be created in the working directory
 	hookScriptFile, err := os.OpenFile(jsFileName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
-		log.Fatalln("Unable to read hook.js ", err)
+		log.Fatalln("Unable to create hook.js ", err)
+	}
+
+	// #nosec G304 forcing the file to be created in the working directory
+	gitignoreFile, err := os.OpenFile(gitignore, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		log.Fatalln("Unable to create .gitignore ", err)
+	}
+
+	gitignoreFile.Write([]byte("test\n.test-env\nnode_modules"))
+
+	_, err = os.Create(envFileName)
+	if err != nil {
+		log.Fatalln("Unable to create .test-env ", err)
+	}
+
+	// #nosec G304 forcing the file to be created in the working directory
+	_, err = os.Create(pkgFileName)
+	if err != nil {
+		log.Fatalln("Unable to create package.json ", err)
+	}
+
+	// #nosec G204 running prescribed npm command
+	if err := exec.Command("npm", "init", "-y").Run(); err != nil {
+		log.Fatal("Problem executing npm init ", err)
 	}
 
 	hookCode := []byte(`exports.handler = async (context) => {
@@ -155,13 +167,13 @@ func newHook(name string, defaultHookConfig hookType) {
 }`)
 
 	h := smarthooks.SmartHook{
-		Type:     oltypes.String(hookType),
+		Type:     oltypes.String(menuOption),
 		Function: oltypes.String(string(hookCode)),
 		Disabled: oltypes.Bool(true),
 		Runtime:  oltypes.String("nodejs12.x"),
 		Retries:  oltypes.Int32(0),
 		Timeout:  oltypes.Int32(1),
-		Options:  defaultHookConfig.DefaultOptions,
+		Options:  selectedHookType.Value.(*smarthooks.Options),
 		EnvVars:  []smarthookenvs.EnvVar{},
 		Packages: map[string]string{},
 	}
@@ -177,11 +189,13 @@ func newHook(name string, defaultHookConfig hookType) {
 		hookScriptFile.Close()
 		log.Fatal("Problem creating hook.js file", err)
 	}
+
 	hookJSONFile.Close()
 	hookScriptFile.Close()
-	fmt.Printf("Created a new %s project.\n", hookType)
-	fmt.Println("To deploy your Smart Hook run 'onelogin smarthooks deploy' from the project directory")
+	gitignoreFile.Close()
 
+	fmt.Printf("Created a new %s project.\n", menuOption)
+	fmt.Println("To deploy your Smart Hook run 'onelogin smarthooks deploy' from the project directory")
 }
 
 func listHooks(client *client.APIClient) {
@@ -200,13 +214,13 @@ func getHook(id string, client *client.APIClient) {
 	// #nosec G304 forcing the file to be created in the working directory
 	hookJSONFile, err := os.OpenFile(filepath.Join(workingDir, "hook.json"), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		log.Fatalln("Unable to read hook.json ", err)
+		log.Fatalln("Unable to create hook.json ", err)
 	}
 
 	// #nosec G304 forcing the file to be created in the working directory
 	hookScriptFile, err := os.OpenFile(filepath.Join(workingDir, "hook.js"), os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		log.Fatalln("Unable to read hook.js ", err)
+		log.Fatalln("Unable to create hook.js ", err)
 	}
 
 	h, err := client.Services.SmartHooksV1.GetOne(id)
@@ -219,6 +233,16 @@ func getHook(id string, client *client.APIClient) {
 	if _, err = hookJSONFile.Write(hook); err != nil {
 		hookJSONFile.Close()
 		log.Fatal("Problem creating hook.json file", err)
+	}
+
+	if err := exec.Command("npm", "init", "--y").Run(); err != nil {
+		log.Fatalln("Problem executing npm init ", err)
+	}
+
+	for k, v := range h.Packages {
+		if err := exec.Command("npm", "install", fmt.Sprintf("%s@%s", k, v)).Run(); err != nil {
+			log.Fatalf("Problem executing npm install for %s %s", k, err)
+		}
 	}
 
 	h.DecodeFunction()
@@ -234,6 +258,10 @@ func getHook(id string, client *client.APIClient) {
 }
 
 func deployHook(client *client.APIClient) {
+	type HookDeps struct {
+		Dependencies map[string]string `json:"dependencies,omitempty"`
+	}
+
 	workingDir, _ := os.Getwd()
 	// #nosec G304 forcing the file to be created in the working directory
 	hookData, err := ioutil.ReadFile(filepath.Join(workingDir, "hook.json"))
@@ -247,10 +275,27 @@ func deployHook(client *client.APIClient) {
 		log.Fatalln("Unable to read hook.js ", err)
 	}
 
+	// #nosec G304 forcing the file to be created in the working directory
+	hookPkg, err := ioutil.ReadFile(filepath.Join(workingDir, "package.json"))
+	if err != nil {
+		log.Fatalln("Unable to read hook.js ", err)
+	}
+
 	hook := smarthooks.SmartHook{}
 	if err = json.Unmarshal(hookData, &hook); err != nil {
 		log.Fatalln("unable to parse smart hook data", err)
 	}
+
+	hookDeps := HookDeps{}
+	json.Unmarshal(hookPkg, &hookDeps)
+	reg, err := regexp.Compile("[^0-9.]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for k, v := range hookDeps.Dependencies {
+		hook.Packages[k] = reg.ReplaceAllString(v, "") // must be exact version ("^0.21.0" must be "0.21.0")
+	}
+	fmt.Println("ASDF", hook.Packages)
 
 	hook.Function = oltypes.String(string(hookCode))
 	hook.EncodeFunction()
