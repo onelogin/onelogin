@@ -240,6 +240,7 @@ func getHook(id string, client *client.APIClient) {
 	}
 
 	for k, v := range h.Packages {
+		// #nosec G204 function call argument is string printer for package name@version fed as argument to npm install
 		if err := exec.Command("npm", "install", fmt.Sprintf("%s@%s", k, v)).Run(); err != nil {
 			log.Fatalf("Problem executing npm install for %s %s", k, err)
 		}
