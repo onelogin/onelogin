@@ -24,11 +24,14 @@ import (
 
 func init() {
 	legalActions := map[string]interface{}{
-		"new":    newHook,    // new up a hook request boilerplate and js file
-		"list":   listHooks,  // list hook names/ids
-		"get":    getHook,    // pull down a hook by id
-		"deploy": deployHook, // create or update the hook depending on if id is given
-		"delete": deleteHook, // deletes the smart hook
+		"new":          newHook,    // new up a hook request boilerplate and js file
+		"list":         listHooks,  // list hook names/ids
+		"get":          getHook,    // pull down a hook by id
+		"deploy":       deployHook, // create or update the hook depending on if id is given
+		"delete":       deleteHook, // deletes the smart hook
+		"env_vars":     listEnvs,
+		"put_env_vars": putEnvs,
+		"rm_env_vars":  rmEnvs,
 	}
 
 	var (
@@ -57,11 +60,15 @@ func init() {
 		Short: "Assists in managing Smart Hooks in your OneLogin account",
 		Long: `Creates a .js and .json file with the configuration needed for a Smart Hook and its backing javascript code.
 		Available Actions:
-			new                       => creates an empty hook.js file and hook.json file with empty required fields in the current working directory
-			list                      => lists the hook IDs associated to your account
-			deploy                    => deploys the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API
-			get     [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
-			delete  [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API`,
+			new                                       => creates an empty hook.js file and hook.json file with empty required fields in the current working directory
+			list                                      => lists the hook IDs associated to your account
+			deploy                                    => deploys the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API
+			get         [id - required]               => retrieves the hook and saves it to a hook.js and hook.json file
+			delete      [ids - required]              => accepts a list of IDs to be destroyed via a delete request to OneLogin API
+			
+			env_vars                                  => lists the defined environment variable names. E.g. environment variables like FOO=bar BING=baz would turn up [FOO, BING]
+			put_env_vars [key=value pairs - required]  => creates or updates the environment variable with the given key. Must be given as FOO=bar BING=baz
+			rm_env_vars  [key - required]              => deletes the environment variable with the given key.`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			action = strings.ToLower(args[0])
 			if legalActions[action] == nil {
@@ -338,4 +345,91 @@ func deleteHook(ids []string, client *client.APIClient) {
 	}
 	wg.Wait()
 	log.Println("Finished deleting hooks")
+}
+
+func listEnvs(client *client.APIClient) {
+	vars, err := client.Services.SmartHooksEnvVarsV1.Query(nil)
+	if err != nil {
+		log.Fatalln("Unable to query Smart Hook Environment Variables", err)
+	}
+	for _, ev := range vars {
+		fmt.Println(*ev.Name)
+	}
+}
+
+func putEnvs(vars []string, client *client.APIClient) {
+	wg := sync.WaitGroup{}
+	existingVarsResp, err := client.Services.SmartHooksEnvVarsV1.Query(nil)
+	if err != nil {
+		log.Fatalln("Unable to query Smart Hook Environment Variables", err)
+	}
+	existing := map[string]*smarthookenvs.EnvVar{} // map by name for easier lookup later
+	for i, ev := range existingVarsResp {
+		existing[*ev.Name] = &existingVarsResp[i]
+	}
+
+	for _, v := range vars {
+		d := strings.Split(v, "=") // split FOO=bar to ["FOO", "bar"] tuples. Key is first value
+		if len(d) != 2 {
+			log.Fatalln("Malformatted environment variable key value pairs given")
+		} else {
+			wg.Add(1)
+			if existing[d[0]] != nil {
+				e := existing[d[0]]
+				e.Value = oltypes.String(d[1])
+				go func(ev *smarthookenvs.EnvVar, wg *sync.WaitGroup) {
+					defer wg.Done()
+					fmt.Println("Updating", *ev.Name, *ev.ID)
+					if ev, err := client.Services.SmartHooksEnvVarsV1.Update(ev); err != nil {
+						log.Println("Unable to update environment variable with id:", *ev.ID, err)
+					} else {
+						log.Println("Updated environment variable ", *ev.ID)
+					}
+				}(e, &wg)
+			} else {
+				r := smarthookenvs.EnvVar{Name: oltypes.String(d[0]), Value: oltypes.String(d[1])}
+				go func(ev *smarthookenvs.EnvVar, wg *sync.WaitGroup) {
+					defer wg.Done()
+					fmt.Println("Creating", *r.Name)
+					if ev, err := client.Services.SmartHooksEnvVarsV1.Create(ev); err != nil {
+						log.Println("Unable to update environment variable with id:", *ev.ID, err)
+					} else {
+						log.Println("Updated environment variable", *ev.ID)
+					}
+				}(&r, &wg)
+			}
+		}
+	}
+	wg.Wait()
+	log.Println("Finished updating environment variables")
+}
+
+func rmEnvs(vars []string, client *client.APIClient) {
+	wg := sync.WaitGroup{}
+	existingVarsResp, err := client.Services.SmartHooksEnvVarsV1.Query(nil)
+	if err != nil {
+		log.Fatalln("Unable to query Smart Hook Environment Variables", err)
+	}
+
+	existing := map[string]string{} // name: id
+	for i, ev := range existingVarsResp {
+		existing[*ev.Name] = *existingVarsResp[i].ID
+	}
+
+	for _, v := range vars {
+		if existing[v] != "" {
+			wg.Add(1)
+			go func(id string, wg *sync.WaitGroup) {
+				defer wg.Done()
+				if err := client.Services.SmartHooksEnvVarsV1.Destroy(id); err != nil {
+					log.Println("Unable to delete environment variable", id, err)
+				} else {
+					log.Println("Deleted environment variable", id)
+				}
+			}(existing[v], &wg)
+		}
+	}
+
+	wg.Wait()
+	log.Println("Finished removing environment variables")
 }
