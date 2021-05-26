@@ -11,12 +11,15 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/okta/okta-sdk-golang/v2/okta"
 	"github.com/onelogin/onelogin-go-sdk/pkg/client"
-	"log"
+	"github.com/onelogin/onelogin/profiles"
 )
 
 // Clients is a list of memoized instantiated clients
@@ -33,7 +36,30 @@ type ClientConfigs struct {
 	OktaOrgName, OktaBaseURL, OktaAPIToken              string
 }
 
-func New(clientConfigs ClientConfigs) *Clients {
+func New(credsFile *os.File) *Clients {
+	profileService := profiles.ProfileService{
+		Repository: profiles.FileRepository{
+			StorageMedia: credsFile,
+		},
+	}
+	profile := profileService.GetActive()
+	clientConfigs := ClientConfigs{
+		AwsRegion:    os.Getenv("AWS_REGION"),
+		OktaOrgName:  os.Getenv("OKTA_ORG_NAME"),
+		OktaBaseURL:  os.Getenv("OKTA_BASE_URL"),
+		OktaAPIToken: os.Getenv("OKTA_API_TOKEN"),
+	}
+	if profile == nil {
+		fmt.Println("No active profile detected. Authenticating with environment variables")
+		clientConfigs.OneLoginClientID = os.Getenv("ONELOGIN_CLIENT_ID")
+		clientConfigs.OneLoginClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
+		clientConfigs.OneLoginURL = os.Getenv("ONELOGIN_OAPI_URL")
+	} else {
+		fmt.Println("Using profile", (*profile).Name)
+		clientConfigs.OneLoginClientID = (*profile).ClientID
+		clientConfigs.OneLoginClientSecret = (*profile).ClientSecret
+		clientConfigs.OneLoginURL = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
+	}
 	return &Clients{ClientConfigs: clientConfigs}
 }
 

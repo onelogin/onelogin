@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/onelogin/onelogin/clients"
-	"github.com/onelogin/onelogin/profiles"
 	tfimport "github.com/onelogin/onelogin/terraform/import"
 	tfimportables "github.com/onelogin/onelogin/terraform/importables"
 	stateparser "github.com/onelogin/onelogin/terraform/state_parser"
@@ -23,10 +22,10 @@ import (
 
 func init() {
 	var (
-		autoApprove   *bool
-		outFile       *string
-		searchID      *string
-		clientConfigs clients.ClientConfigs
+		autoApprove *bool
+		outFile     *string
+		searchID    *string
+		clientList  *clients.Clients
 	)
 	var tfImportCommand = &cobra.Command{
 		Use:   "terraform-import",
@@ -51,32 +50,10 @@ func init() {
 				configFile.Close()
 				log.Println("Unable to open profiles file. Falling back to Environment Variables", err)
 			}
-			profileService := profiles.ProfileService{
-				Repository: profiles.FileRepository{
-					StorageMedia: configFile,
-				},
-			}
-			profile := profileService.GetActive()
-			clientConfigs = clients.ClientConfigs{
-				AwsRegion:    os.Getenv("AWS_REGION"),
-				OktaOrgName:  os.Getenv("OKTA_ORG_NAME"),
-				OktaBaseURL:  os.Getenv("OKTA_BASE_URL"),
-				OktaAPIToken: os.Getenv("OKTA_API_TOKEN"),
-			}
-			if profile == nil {
-				fmt.Println("No active profile detected. Authenticating with environment variables")
-				clientConfigs.OneLoginClientID = os.Getenv("ONELOGIN_CLIENT_ID")
-				clientConfigs.OneLoginClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
-				clientConfigs.OneLoginURL = os.Getenv("ONELOGIN_OAPI_URL")
-			} else {
-				fmt.Println("Using profile", (*profile).Name)
-				clientConfigs.OneLoginClientID = (*profile).ClientID
-				clientConfigs.OneLoginClientSecret = (*profile).ClientSecret
-				clientConfigs.OneLoginURL = fmt.Sprintf("https://api.%s.onelogin.com", (*profile).Region)
-			}
+			clientList = clients.New(configFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			tfImport(args, clientConfigs, *autoApprove, searchID, *outFile)
+			tfImport(args, clientList, *autoApprove, searchID, *outFile)
 		},
 	}
 	autoApprove = tfImportCommand.Flags().BoolP("auto_approve", "a", false, "Skip confirmation of resource import")
@@ -85,7 +62,7 @@ func init() {
 	rootCmd.AddCommand(tfImportCommand)
 }
 
-func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bool, searchID *string, outFile string) {
+func tfImport(args []string, clientList *clients.Clients, autoApprove bool, searchID *string, outFile string) {
 	sourceName := args[0]
 	workingDir, _ := os.Getwd()
 	if outFile == "" {
@@ -103,7 +80,6 @@ func tfImport(args []string, clientConfigs clients.ClientConfigs, autoApprove bo
 		log.Fatalln("Unable to read from tf file ", err)
 	}
 
-	clientList := clients.New(clientConfigs)
 	importables := tfimportables.New(clientList)
 	importable := importables.GetImportable(strings.ToLower(args[0]))
 

@@ -10,7 +10,7 @@ require (
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/okta/okta-sdk-golang/v2 v2.0.0
-	github.com/onelogin/onelogin-go-sdk v1.1.11
+	github.com/onelogin/onelogin-go-sdk v1.1.12
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.5.1

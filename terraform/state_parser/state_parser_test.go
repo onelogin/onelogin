@@ -3,10 +3,11 @@ package stateparser
 import (
 	"fmt"
 
-	"github.com/onelogin/onelogin/clients"
-	"github.com/onelogin/onelogin/terraform/importables"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/onelogin/onelogin/clients"
+	tfimportables "github.com/onelogin/onelogin/terraform/importables"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConvertTFStateToHCL(t *testing.T) {
@@ -79,13 +80,15 @@ func TestConvertTFStateToHCL(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			clients := clients.New(clients.ClientConfigs{
-				OneLoginClientID:     "ONELOGIN_CLIENT_ID",
-				OneLoginClientSecret: "ONELOGIN_CLIENT_SECRET",
-				OneLoginURL:          "ONELOGIN_OAPI_URL",
-				AwsRegion:            "us-west-2",
-			})
-			importables := tfimportables.New(clients)
+			clients := clients.Clients{
+				ClientConfigs: clients.ClientConfigs{
+					OneLoginClientID:     "ONELOGIN_CLIENT_ID",
+					OneLoginClientSecret: "ONELOGIN_CLIENT_SECRET",
+					OneLoginURL:          "ONELOGIN_OAPI_URL",
+					AwsRegion:            "us-west-2",
+				},
+			}
+			importables := tfimportables.New(&clients)
 			actual := ConvertTFStateToHCL(test.InputState, importables)
 			assert.Equal(t, len(test.ExpectedOutput), len(string(actual)))
 		})
