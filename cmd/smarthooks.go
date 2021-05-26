@@ -353,7 +353,7 @@ func listEnvs(client *client.APIClient) {
 		log.Fatalln("Unable to query Smart Hook Environment Variables", err)
 	}
 	for _, ev := range vars {
-		fmt.Println(*ev.Name)
+		fmt.Println(*ev.Name, *ev.ID)
 	}
 }
 
