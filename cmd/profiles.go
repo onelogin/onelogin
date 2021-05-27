@@ -3,12 +3,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/onelogin/onelogin/profiles"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/onelogin/onelogin/profiles"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -144,7 +145,7 @@ func current(pr profiles.ProfileService) {
 	profiles := pr.Index()
 	var active string
 	for name, p := range profiles {
-		if (*p).Active == true {
+		if (*p).Active {
 			active = name
 			break
 		}
