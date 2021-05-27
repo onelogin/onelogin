@@ -45,11 +45,16 @@ which  (current)                  => returns current active profile
 Creates a .js and .json file with the configuration needed for a Smart Hook and its backing javascript code.
 Available Actions:
 ```
-new                       => creates an empty hook.js file and hook.json file with empty required fields in the current working directory
-list                      => lists the hook IDs associated to your account
-deploy                    => deploys the smart hook defined in the project via a create/update request to OneLogin API
-get     [id - required]   => retrieves the hook and saves it to a hook.js and hook.json file
-delete  [ids - required]  => accepts a list of IDs to be destroyed via a delete request to OneLogin API
+new                                        => creates a new smart hook project in a sub-directory of the current working directory, with the given name and hook type.
+list                                       => lists the hook IDs and types of hooks associated to your account.
+deploy                                     => deploys the smart hook defined in the hook.js and hook.json files in the current working directory via a create/update request to OneLogin API.
+test                                       => passes an example context defined in context.json to the hook code and runs it in lambda-local.
+get         [id - required]                => creates a new smart hook project from an existing hook in OneLogin in current directory. ⚠️ Will overwrite existing project! To track changes or treat smart hook like a NodeJS project use a VCS.
+delete      [ids - required]               => accepts a list of IDs to be destroyed via a delete request to OneLogin API.
+
+env_vars                                   => lists the defined environment variable names. E.g. environment variables like FOO=bar BING=baz would turn up [FOO, BING].
+put_env_vars [key=value pairs - required]  => creates or updates the environment variable with the given key. Must be given as FOO=bar BING=baz.
+rm_env_vars  [key - required]              => deletes the environment variable with the given key.
 ```
 
 `terraform-import <resource>`: Import your remote resources into a local Terraform State.
@@ -105,6 +110,10 @@ Update a [Smart Hook](https://developers.onelogin.com/api-docs/2/smart-hooks/ove
 onelogin smarthooks save
 ```
 
+To run tests against your Smart Hook code:
+* Create a `context.json` file (the input to the function). You can get one for [Pre-Authentication](https://github.com/onelogin/smarthooks-sdk/blob/master/src/preAuthentication/exampleContexts.js) or [User-Migration](https://github.com/onelogin/smarthooks-sdk/blob/master/src/userMigration/exampleContexts.js)
+* Run `onelogin smarthooks test` from inside your Smart Hook Project
+* Results will print to the screen
 
 ## Terraform Import
 Import all OneLogin apps, create a main.tf file, and establish Terraform state.
