@@ -92,7 +92,7 @@ func tfImport(args []string, clientList *clients.Clients, autoApprove bool, sear
 		os.Exit(0)
 	}
 
-	if autoApprove == false {
+	if !autoApprove {
 		fmt.Printf("This will import %d resources. Do you want to continue? (y/n): ", len(newResourceDefinitions))
 		input := bufio.NewScanner(os.Stdin)
 		input.Scan()
