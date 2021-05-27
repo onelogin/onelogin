@@ -11,8 +11,8 @@ type MockSmartHooksService struct{}
 
 func (svc MockSmartHooksService) Query(query *smarthooks.SmartHookQuery) ([]smarthooks.SmartHook, error) {
 	return []smarthooks.SmartHook{
-		smarthooks.SmartHook{Function: oltypes.String("test_1"), Type: oltypes.String("test"), ID: oltypes.String("1")},
-		smarthooks.SmartHook{Function: oltypes.String("test_2"), Type: oltypes.String("test"), ID: oltypes.String("2")},
+		{Function: oltypes.String("test_1"), Type: oltypes.String("test"), ID: oltypes.String("1")},
+		{Function: oltypes.String("test_2"), Type: oltypes.String("test"), ID: oltypes.String("2")},
 	}, nil
 }
 
@@ -29,15 +29,15 @@ func TestImportSmartHookFromRemote(t *testing.T) {
 		"It pulls all smarthooks": {
 			Importable: OneloginSmartHooksImportable{Service: MockSmartHooksService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test-1", ImportID: "1", Type: "onelogin_smarthooks"},
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test-2", ImportID: "2", Type: "onelogin_smarthooks"},
+				{Provider: "onelogin/onelogin", Name: "test-1", ImportID: "1", Type: "onelogin_smarthooks"},
+				{Provider: "onelogin/onelogin", Name: "test-2", ImportID: "2", Type: "onelogin_smarthooks"},
 			},
 		},
 		"It gets one smarthook": {
 			SearchID:   oltypes.String("1"),
 			Importable: OneloginSmartHooksImportable{Service: MockSmartHooksService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test-1", ImportID: "1", Type: "onelogin_smarthooks"},
+				{Provider: "onelogin/onelogin", Name: "test-1", ImportID: "1", Type: "onelogin_smarthooks"},
 			},
 		},
 	}

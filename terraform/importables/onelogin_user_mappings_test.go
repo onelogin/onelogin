@@ -14,14 +14,14 @@ func TestAssembleUserMappingResourceDefinitions(t *testing.T) {
 	}{
 		"it creates a the minimum required representation of a resource in HCL": {
 			InputUserMappings: []usermappings.UserMapping{
-				usermappings.UserMapping{Name: oltypes.String("test1"), ID: oltypes.Int32(1)},
-				usermappings.UserMapping{Name: oltypes.String("test2"), ID: oltypes.Int32(2)},
-				usermappings.UserMapping{Name: oltypes.String("test3"), ID: oltypes.Int32(3)},
+				{Name: oltypes.String("test1"), ID: oltypes.Int32(1)},
+				{Name: oltypes.String("test2"), ID: oltypes.Int32(2)},
+				{Name: oltypes.String("test3"), ID: oltypes.Int32(3)},
 			},
 			ExpectedOut: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Type: "onelogin_user_mappings", ImportID: "1", Name: "test1"},
-				ResourceDefinition{Provider: "onelogin/onelogin", Type: "onelogin_user_mappings", ImportID: "2", Name: "test2"},
-				ResourceDefinition{Provider: "onelogin/onelogin", Type: "onelogin_user_mappings", ImportID: "3", Name: "test3"},
+				{Provider: "onelogin/onelogin", Type: "onelogin_user_mappings", ImportID: "1", Name: "test1"},
+				{Provider: "onelogin/onelogin", Type: "onelogin_user_mappings", ImportID: "2", Name: "test2"},
+				{Provider: "onelogin/onelogin", Type: "onelogin_user_mappings", ImportID: "3", Name: "test3"},
 			},
 		},
 	}
@@ -37,7 +37,7 @@ type MockUserMappingService struct{}
 
 func (svc MockUserMappingService) Query(query *usermappings.UserMappingsQuery) ([]usermappings.UserMapping, error) {
 	return []usermappings.UserMapping{
-		usermappings.UserMapping{Name: oltypes.String("test2"), ID: oltypes.Int32(2)},
+		{Name: oltypes.String("test2"), ID: oltypes.Int32(2)},
 	}, nil
 }
 
@@ -54,14 +54,14 @@ func TestImportUserMappingFromRemote(t *testing.T) {
 		"It pulls all apps of a certain type": {
 			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
+				{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
 			},
 		},
 		"It gets one app": {
 			SearchID:   oltypes.String("1"),
 			Importable: OneloginUserMappingsImportable{Service: MockUserMappingService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
+				{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_user_mappings"},
 			},
 		},
 	}

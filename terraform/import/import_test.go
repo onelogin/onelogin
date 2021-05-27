@@ -52,18 +52,18 @@ func TestFilterExistingDefinitions(t *testing.T) {
 				}
 			`),
 			IncomingResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Provider: "onelogin/onelogin", Name: "defined_in_main_already", Type: "onelogin_apps"},
-				tfimportables.ResourceDefinition{Provider: "okra/okra", Name: "test_defined_already", Type: "okra_saml_apps"},
-				tfimportables.ResourceDefinition{Provider: "onelogin/onelogin", Name: "new_resource", Type: "onelogin_apps"},
-				tfimportables.ResourceDefinition{Provider: "onelogin/onelogin", Name: "test", Type: "onelogin_saml_apps"},
-				tfimportables.ResourceDefinition{Provider: "okra/okra", Name: "test", Type: "okra_saml_apps"},
-				tfimportables.ResourceDefinition{Provider: "aws/aws", Name: "test", Type: "aws_apps"},
+				{Provider: "onelogin/onelogin", Name: "defined_in_main_already", Type: "onelogin_apps"},
+				{Provider: "okra/okra", Name: "test_defined_already", Type: "okra_saml_apps"},
+				{Provider: "onelogin/onelogin", Name: "new_resource", Type: "onelogin_apps"},
+				{Provider: "onelogin/onelogin", Name: "test", Type: "onelogin_saml_apps"},
+				{Provider: "okra/okra", Name: "test", Type: "okra_saml_apps"},
+				{Provider: "aws/aws", Name: "test", Type: "aws_apps"},
 			},
 			ExpectedResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Provider: "onelogin/onelogin", Name: "new_resource", Type: "onelogin_apps"},
-				tfimportables.ResourceDefinition{Provider: "onelogin/onelogin", Name: "test", Type: "onelogin_saml_apps"},
-				tfimportables.ResourceDefinition{Provider: "okra/okra", Name: "test", Type: "okra_saml_apps"},
-				tfimportables.ResourceDefinition{Provider: "aws/aws", Name: "test", Type: "aws_apps"},
+				{Provider: "onelogin/onelogin", Name: "new_resource", Type: "onelogin_apps"},
+				{Provider: "onelogin/onelogin", Name: "test", Type: "onelogin_saml_apps"},
+				{Provider: "okra/okra", Name: "test", Type: "okra_saml_apps"},
+				{Provider: "aws/aws", Name: "test", Type: "aws_apps"},
 			},
 			ExpectedProviders: []string{"onelogin/onelogin", "okra/okra", "aws/aws"},
 		},
@@ -86,8 +86,8 @@ func TestAddNewProvidersAndResourceHCL(t *testing.T) {
 	}{
 		"it adds provider and resource to the writer": {
 			InputResourceDefinitions: []tfimportables.ResourceDefinition{
-				tfimportables.ResourceDefinition{Name: "test", Type: "test", ImportID: "test", Provider: "test/test"},
-				tfimportables.ResourceDefinition{Name: "test", Type: "test", ImportID: "test", Provider: "test2/test2"},
+				{Name: "test", Type: "test", ImportID: "test", Provider: "test/test"},
+				{Name: "test", Type: "test", ImportID: "test", Provider: "test2/test2"},
 			},
 			TestFile:                 MockFile{},
 			InputProviderDefinitions: []string{"test/test", "test2/test2"},

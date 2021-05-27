@@ -11,8 +11,8 @@ type MockRolesService struct{}
 
 func (svc MockRolesService) Query(query *roles.RoleQuery) ([]roles.Role, error) {
 	return []roles.Role{
-		roles.Role{Name: oltypes.String("test_1"), Apps: []int32{1, 2, 3}, ID: oltypes.Int32(1)},
-		roles.Role{Name: oltypes.String("test_2"), Apps: []int32{1, 2, 3}, ID: oltypes.Int32(2)},
+		{Name: oltypes.String("test_1"), Apps: []int32{1, 2, 3}, ID: oltypes.Int32(1)},
+		{Name: oltypes.String("test_2"), Apps: []int32{1, 2, 3}, ID: oltypes.Int32(2)},
 	}, nil
 }
 
@@ -29,15 +29,15 @@ func TestImportRoleFromRemote(t *testing.T) {
 		"It pulls all roles": {
 			Importable: OneloginRolesImportable{Service: MockRolesService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test1", ImportID: "1", Type: "onelogin_roles"},
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_roles"},
+				{Provider: "onelogin/onelogin", Name: "test1", ImportID: "1", Type: "onelogin_roles"},
+				{Provider: "onelogin/onelogin", Name: "test2", ImportID: "2", Type: "onelogin_roles"},
 			},
 		},
 		"It gets one role": {
 			SearchID:   oltypes.String("1"),
 			Importable: OneloginRolesImportable{Service: MockRolesService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test", ImportID: "1", Type: "onelogin_roles"},
+				{Provider: "onelogin/onelogin", Name: "test", ImportID: "1", Type: "onelogin_roles"},
 			},
 		},
 	}
