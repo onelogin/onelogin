@@ -24,11 +24,11 @@ import (
 
 func init() {
 	legalActions := map[string]interface{}{
-		"new":    newHook,    // new up a hook request boilerplate and js file
-		"list":   listHooks,  // list hook names/ids
-		"get":    getHook,    // pull down a hook by id
-		"deploy": deployHook, // create or update the hook depending on if id is given
-		// "test":         testHook,   // passes hook an example context and runs hook in lambda-local
+		"new":          newHook,    // new up a hook request boilerplate and js file
+		"list":         listHooks,  // list hook names/ids
+		"get":          getHook,    // pull down a hook by id
+		"deploy":       deployHook, // create or update the hook depending on if id is given
+		"test":         testHook,   // passes hook an example context and runs hook in lambda-local
 		"delete":       deleteHook, // deletes the smart hook
 		"env_vars":     listEnvs,   // lists the established environment variables for the account
 		"put_env_vars": putEnvs,    // create or update an environment variable in the account
@@ -123,6 +123,26 @@ func execCommandAsync(wg *sync.WaitGroup, name string, args ...string) {
 	if err := exec.Command(name, args...).Run(); err != nil {
 		log.Fatalf("Problem executing %s\n%s", name, err)
 	}
+}
+
+func testHook() {
+	if err := exec.Command("npm", "install").Run(); err != nil {
+		log.Fatalln("Problem executing 'npm install'")
+	}
+	tstCmd := exec.Command("npx", "lambda-local", "-l", "hook.js", "-e", "context.json", "--envfile", ".test-env")
+	stdout, _ := tstCmd.StdoutPipe()
+
+	if err := tstCmd.Start(); err != nil {
+		log.Fatalln("Problem executing 'npx lambda-local'")
+	}
+
+	data, _ := ioutil.ReadAll(stdout)
+
+	if err := tstCmd.Wait(); err != nil {
+		log.Fatalln("Problem executing 'npx lambda-local'")
+	}
+
+	fmt.Println(string(data))
 }
 
 func newHook(name string) {
