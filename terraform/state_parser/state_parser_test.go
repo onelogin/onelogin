@@ -18,12 +18,12 @@ func TestConvertTFStateToHCL(t *testing.T) {
 		"it creates a bytes buffer representing the state in HCL": {
 			InputState: State{
 				Resources: []StateResource{
-					StateResource{
+					{
 						Name:     "test_resource",
 						Type:     "onelogin_apps",
 						Provider: "provider[\"registry.terraform.io/onelogin/onelogin\"]",
 						Instances: []ResourceInstance{
-							ResourceInstance{
+							{
 								Data: map[string]interface{}{
 									"name":          "test",
 									"connector_id":  22,
@@ -34,12 +34,12 @@ func TestConvertTFStateToHCL(t *testing.T) {
 							},
 						},
 					},
-					StateResource{
+					{
 						Name:     "test_resource",
 						Type:     "onelogin_roles",
 						Provider: "provider[\"registry.terraform.io/onelogin/onelogin\"]",
 						Instances: []ResourceInstance{
-							ResourceInstance{
+							{
 								Data: map[string]interface{}{
 									"name": "test",
 									"apps": []int{1, 2, 3},
@@ -47,12 +47,12 @@ func TestConvertTFStateToHCL(t *testing.T) {
 							},
 						},
 					},
-					StateResource{
+					{
 						Name:     "test_resource",
 						Type:     "onelogin_users",
 						Provider: "provider[\"registry.terraform.io/onelogin/onelogin\"]",
 						Instances: []ResourceInstance{
-							ResourceInstance{
+							{
 								Data: map[string]interface{}{
 									"username": "test",
 									"email":    "test@test.test",
@@ -60,12 +60,12 @@ func TestConvertTFStateToHCL(t *testing.T) {
 							},
 						},
 					},
-					StateResource{
+					{
 						Name:     "test_resource",
 						Type:     "aws_iam_user",
 						Provider: "provider[\"registry.terraform.io/aws/aws\"]",
 						Instances: []ResourceInstance{
-							ResourceInstance{
+							{
 								Data: map[string]interface{}{
 									"username": "test",
 									"path":     "/",

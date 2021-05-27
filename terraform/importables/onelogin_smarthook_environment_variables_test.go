@@ -11,8 +11,8 @@ type MockEnvVarsService struct{}
 
 func (svc MockEnvVarsService) Query(query *smarthookenvs.SmartHookEnvVarQuery) ([]smarthookenvs.EnvVar, error) {
 	return []smarthookenvs.EnvVar{
-		smarthookenvs.EnvVar{Name: oltypes.String("test_1"), ID: oltypes.String("1")},
-		smarthookenvs.EnvVar{Name: oltypes.String("test_2"), ID: oltypes.String("2")},
+		{Name: oltypes.String("test_1"), ID: oltypes.String("1")},
+		{Name: oltypes.String("test_2"), ID: oltypes.String("2")},
 	}, nil
 }
 
@@ -29,15 +29,15 @@ func TestImportEnvVarFromRemote(t *testing.T) {
 		"It pulls all smarthookenvs": {
 			Importable: OneloginSmartHookEnvVarsImportable{Service: MockEnvVarsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test_1-1", ImportID: "1", Type: "onelogin_smarthook_environment_variables"},
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test_2-2", ImportID: "2", Type: "onelogin_smarthook_environment_variables"},
+				{Provider: "onelogin/onelogin", Name: "test_1-1", ImportID: "1", Type: "onelogin_smarthook_environment_variables"},
+				{Provider: "onelogin/onelogin", Name: "test_2-2", ImportID: "2", Type: "onelogin_smarthook_environment_variables"},
 			},
 		},
 		"It gets one smarthook": {
 			SearchID:   oltypes.String("1"),
 			Importable: OneloginSmartHookEnvVarsImportable{Service: MockEnvVarsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "onelogin/onelogin", Name: "test_1-1", ImportID: "1", Type: "onelogin_smarthook_environment_variables"},
+				{Provider: "onelogin/onelogin", Name: "test_1-1", ImportID: "1", Type: "onelogin_smarthook_environment_variables"},
 			},
 		},
 	}

@@ -20,9 +20,9 @@ func TestAssembleOktaAppResourceDefinitions(t *testing.T) {
 				&okta.Application{Label: "test3", Id: "3"},
 			},
 			ExpectedOut: []ResourceDefinition{
-				ResourceDefinition{Provider: "oktadeveloper/okta", Type: "okta_app_oauth", ImportID: "1", Name: "okta_app_oauth_test1-1"},
-				ResourceDefinition{Provider: "oktadeveloper/okta", Type: "okta_app_saml", ImportID: "2", Name: "okta_app_saml_test2-2"},
-				ResourceDefinition{Provider: "oktadeveloper/okta", Type: "okta_app_basic_auth", ImportID: "3", Name: "okta_app_basic_auth_test3-3"},
+				{Provider: "oktadeveloper/okta", Type: "okta_app_oauth", ImportID: "1", Name: "okta_app_oauth_test1-1"},
+				{Provider: "oktadeveloper/okta", Type: "okta_app_saml", ImportID: "2", Name: "okta_app_saml_test2-2"},
+				{Provider: "oktadeveloper/okta", Type: "okta_app_basic_auth", ImportID: "3", Name: "okta_app_basic_auth_test3-3"},
 			},
 		},
 	}
@@ -50,13 +50,13 @@ func TestImportOktaAppFromRemote(t *testing.T) {
 		"It pulls all apps of a certain type": {
 			Importable: OktaAppsImportable{Service: MockOktaAppsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "oktadeveloper/okta", Name: "okta_app_saml_test2-2", ImportID: "2", Type: "okta_app_saml"},
+				{Provider: "oktadeveloper/okta", Name: "okta_app_saml_test2-2", ImportID: "2", Type: "okta_app_saml"},
 			},
 		},
 		"It gets one app": {
 			Importable: OktaAppsImportable{Service: MockOktaAppsService{}},
 			Expected: []ResourceDefinition{
-				ResourceDefinition{Provider: "oktadeveloper/okta", Name: "okta_app_saml_test2-2", ImportID: "2", Type: "okta_app_saml"},
+				{Provider: "oktadeveloper/okta", Name: "okta_app_saml_test2-2", ImportID: "2", Type: "okta_app_saml"},
 			},
 		},
 	}
