@@ -169,7 +169,7 @@ func newHook(name string) {
 }`)
 
 	h := smarthooks.SmartHook{
-		Type:     oltypes.String(menuOption.Name),
+		Type:     oltypes.String(strings.ToLower(menuOption.Name)),
 		Function: oltypes.String(string(hookCode)),
 		Disabled: oltypes.Bool(true),
 		Runtime:  oltypes.String("nodejs12.x"),
