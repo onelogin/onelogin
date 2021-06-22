@@ -35,7 +35,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/darwin-amd64.tar.gz
-          asset_name: dawrin-amd64.tar.gz
+          asset_name: darwin-amd64.tar.gz
           asset_content_type: application/x-gzip
       - name: Upload Linux-amd64 Asset
         id: upload-Linux-amd64-asset
