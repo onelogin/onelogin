@@ -17,6 +17,12 @@ from inside the repository `go install .` to add a the runnable CLI to your GOPA
 Alternatively you may run `make install` which just runs the above commands
 <br/><br/>
 
+### Install with Homebrew (Mac OS Only)
+brew install onelogin/tap-onelogin/onelogin
+
+Or brew tap onelogin/tap-onelogin and then brew install onelogin.
+<br/><br/>
+
 ### Binaries
 There are binaries available for the major platforms in this project's /build directory. Download the
 binary for your system and add it to your /bin folder or run it directly per your system's requirements.
@@ -26,6 +32,39 @@ binary for your system and add it to your /bin folder or run it directly per you
 * `windows-amd64` => windows 64 bit
 * `linux-386`     => linux 32 bit
 * `linux-amd64`   => linux 64 bit
+
+#### Install Binary on Mac
+Download and extract the `darwin-amd64` package from the release artifacts list
+
+`tar -xvf darwin-amd64.tar.gz && sudo mv build/darwin-amd64/onelogin-darwin-amd64 /usr/local/bin/onelogin` (you can specifiy a different name to invoke such as `usr/local/bin/ol`)
+
+You'll likely get hit with a security warning when you try running `onelogin` for the first time. 
+
+To fix, go to System Preferences > Security & Privacy
+
+you'll be presented with the warning about the binary not being from an identified developer. Allow this app to run.
+
+Try running the command again and click Open from the popup and you should be good to go.
+
+#### Install Binary on Windows
+Download and extract the `windows-amd64` package from the release artifacts list
+
+Navigate to the extracted folder which should be in your Downloads folder and navigate to the .exe file (build > windows-amd64).
+
+Create a folder in Program Files (Program Files \ Onelogin) and add the .exe to that folder.
+
+Add Program Files \ Onelogin to your path by changing the environment variables
+
+  Hit the window key and type path. Select "Edit the system environment variables"
+  Toward the bottom on the Advanced tab, select "Environment Variables"
+  In the System variables list, click the Path variable on the list and click "Edit"
+  Click "New" and add `C:\Program Files\Onelogin`
+  Click OK on all the windows
+
+Open a `Cmd` window and start using `onelogin`
+
+
+/usr/local/bin/onelogin
 
 ## Features
 `onelogin profiles [action] <profile_name>`
