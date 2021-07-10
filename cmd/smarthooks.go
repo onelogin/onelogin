@@ -44,7 +44,7 @@ func init() {
 	smarthooksCommand := &cobra.Command{
 		Use:   "smarthooks",
 		Short: "Assists in managing Smart Hooks in your OneLogin account",
-		Long: `Creates a project with all the files and configuration needed for a Smart Hook and its backing javascript code. 
+		Long: `Creates a project with all the files and configuration needed for a Smart Hook and its backing javascript code.
 		Once your project is created, you should manage this with your favorite VCS as you would with any other NodeJS project.
 		Available Actions:
 			new                                        => creates a new smart hook project in a sub-directory of the current working directory, with the given name and hook type.
@@ -53,7 +53,7 @@ func init() {
 			test                                       => passes an example context defined in context.json to the hook code and runs it in lambda-local.
 			get         [id - required]                => creates a new smart hook project from an existing hook in OneLogin in current directory. ⚠️ Will overwrite existing project! To track changes or treat smart hook like a NodeJS project use a VCS.
 			delete      [ids - required]               => accepts a list of IDs to be destroyed via a delete request to OneLogin API.
-			
+
 			env_vars                                   => lists the defined environment variable names. E.g. environment variables like FOO=bar BING=baz would turn up [FOO, BING].
 			put_env_vars [key=value pairs - required]  => creates or updates the environment variable with the given key. Must be given as FOO=bar BING=baz.
 			rm_env_vars  [key - required]              => deletes the environment variable with the given key.`,
@@ -317,11 +317,11 @@ func deployHook(client *client.APIClient) {
 	if err != nil {
 		log.Fatalln("Unable to parse Smart Hook response")
 	}
-
 	savedHook.DecodeFunction()
 	savedHookCode := []byte(*savedHook.Function)
 
 	wg := sync.WaitGroup{}
+	wg.Add(2)
 	go writeToFileAsync(filepath.Join(workingDir, "hook.json"), h, &wg)
 	go writeToFileAsync(filepath.Join(workingDir, "hook.js"), savedHookCode, &wg)
 	wg.Wait()
