@@ -23,22 +23,11 @@ import (
 )
 
 func init() {
-	legalActions := map[string]interface{}{
-		"new":          newHook,    // new up a hook request boilerplate and js file
-		"list":         listHooks,  // list hook names/ids
-		"get":          getHook,    // pull down a hook by id
-		"deploy":       deployHook, // create or update the hook depending on if id is given
-		"test":         testHook,   // passes hook an example context and runs hook in lambda-local
-		"delete":       deleteHook, // deletes the smart hook
-		"env_vars":     listEnvs,   // lists the established environment variables for the account
-		"put_env_vars": putEnvs,    // create or update an environment variable in the account
-		"rm_env_vars":  rmEnvs,     // removes the environment variable from the account
-	}
-
 	var (
-		action         string
-		smarthookName  *string
-		oneloginClient *client.APIClient
+		action                       string
+		smarthookName, smarthookType *string
+		verbose                      *bool
+		oneloginClient               *client.APIClient
 	)
 
 	smarthooksCommand := &cobra.Command{
@@ -59,9 +48,6 @@ func init() {
 			rm_env_vars  [key - required]              => deletes the environment variable with the given key.`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			action = strings.ToLower(args[0])
-			if legalActions[action] == nil {
-				log.Fatalf("Illegal Action!")
-			}
 			credsFile, err := os.OpenFile(viper.ConfigFileUsed(), os.O_RDWR, 0600)
 			if err != nil {
 				credsFile.Close()
@@ -70,33 +56,41 @@ func init() {
 			oneloginClient = clients.New(credsFile).OneLoginClient()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			// check function signature for action and ensure correct number of arguments given
-			if f, ok := legalActions[action].(func(s string, client *client.APIClient)); ok {
+			switch action {
+			case "new":
+				if len(args) < 2 {
+					newHook(*smarthookName)
+				} else {
+					newHook(args[1])
+				}
+			case "list":
+				listHooks(*smarthookType, *verbose, oneloginClient)
+			case "get":
 				if len(args) < 2 {
 					log.Fatalf("One argument is required for this action!")
 				}
-				f(args[1], oneloginClient)
-			} else if f, ok := legalActions[action].(func(s []string, client *client.APIClient)); ok {
-				if len(args) < 2 {
-					log.Fatalf("At least one argument is required for this action!")
-				}
-				f(args[1:], oneloginClient)
-			} else if f, ok := legalActions[action].(func(client *client.APIClient)); ok {
-				f(oneloginClient)
-			} else if f, ok := legalActions[action].(func()); ok {
-				f()
-			} else if f, ok := legalActions[action].(func(name string)); ok {
-				if len(args) < 2 {
-					f(*smarthookName)
-				} else {
-					f(args[1])
-				}
-			} else {
-				log.Fatalln("Unable to determine function to call")
+				getHook(args[1], oneloginClient)
+			case "deploy":
+				deployHook(oneloginClient)
+			case "test":
+				testHook()
+			case "delete":
+				deleteHook(args[1:], oneloginClient)
+			case "env_vars":
+				listEnvs(oneloginClient)
+			case "put_env_vars":
+				putEnvs(args[1:], oneloginClient)
+			case "rm_env_vars":
+				rmEnvs(args[1:], oneloginClient)
+			default:
+				log.Fatalln("unsupported action")
 			}
+
 		},
 	}
 	smarthookName = smarthooksCommand.Flags().StringP("name", "n", "unnamed", "Smart Hook name")
+	smarthookType = smarthooksCommand.Flags().StringP("type", "t", "", "Smart Hook type")
+	verbose = smarthooksCommand.Flags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.AddCommand(smarthooksCommand)
 }
 
@@ -211,13 +205,17 @@ func newHook(name string) {
 	fmt.Println("To deploy your Smart Hook run 'onelogin smarthooks deploy' from the project directory")
 }
 
-func listHooks(client *client.APIClient) {
-	hooks, err := client.Services.SmartHooksV1.Query(nil)
+func listHooks(hookType string, verbose bool, client *client.APIClient) {
+	hooks, err := client.Services.SmartHooksV1.Query(&smarthooks.SmartHookQuery{Type: hookType})
 	if err != nil {
 		log.Fatalln("Unable to query Smart Hooks", err)
 	}
 	for _, h := range hooks {
-		fmt.Println(*h.Type, *h.ID)
+		if verbose {
+			fmt.Println(*h.Type, *h.ID)
+		} else {
+			fmt.Println(*h.ID)
+		}
 	}
 }
 
@@ -234,7 +232,11 @@ func getHook(id string, client *client.APIClient) {
 	h.DecodeFunction()
 	hookCode := []byte(*h.Function)
 
+	gitignoreData := []byte("test\n.test-env\nnode_modules")
+
 	workingDir, _ := os.Getwd()
+	gitignore := filepath.Join(workingDir, fmt.Sprintf("%s/.gitignore", id))
+	testenv := filepath.Join(workingDir, fmt.Sprintf("%s/.test-env", id))
 	jsFileName := filepath.Join(workingDir, fmt.Sprintf("%s/hook.js", id))
 	jsonFileName := filepath.Join(workingDir, fmt.Sprintf("%s/hook.json", id))
 	// #nosec G304 forcing the file to be created in the working directory
@@ -244,7 +246,7 @@ func getHook(id string, client *client.APIClient) {
 	os.Chdir(id)
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(4)
 	if err := exec.Command("npm", "init", "--y").Run(); err != nil {
 		log.Fatalln("Problem executing npm init ", err)
 	}
@@ -255,6 +257,8 @@ func getHook(id string, client *client.APIClient) {
 	}
 	go writeToFileAsync(jsonFileName, hook, &wg)
 	go writeToFileAsync(jsFileName, hookCode, &wg)
+	go writeToFileAsync(gitignore, gitignoreData, &wg)
+	go createBlankFileAsync(testenv, &wg)
 	wg.Wait()
 }
 
