@@ -44,16 +44,16 @@ func New(credsFile *os.File) *Clients {
 	}
 	profile := profileService.GetActive()
 	clientConfigs := ClientConfigs{
-		AwsRegion:    os.Getenv("AWS_REGION"),
-		OktaOrgName:  os.Getenv("OKTA_ORG_NAME"),
-		OktaBaseURL:  os.Getenv("OKTA_BASE_URL"),
-		OktaAPIToken: os.Getenv("OKTA_API_TOKEN"),
+		AwsRegion:            os.Getenv("AWS_REGION"),
+		OktaOrgName:          os.Getenv("OKTA_ORG_NAME"),
+		OktaBaseURL:          os.Getenv("OKTA_BASE_URL"),
+		OktaAPIToken:         os.Getenv("OKTA_API_TOKEN"),
+		OneLoginClientID:     os.Getenv("ONELOGIN_CLIENT_ID"),
+		OneLoginClientSecret: os.Getenv("ONELOGIN_CLIENT_SECRET"),
+		OneLoginURL:          os.Getenv("ONELOGIN_OAPI_URL"),
 	}
 	if profile == nil {
 		fmt.Println("No active profile detected. Authenticating with environment variables")
-		clientConfigs.OneLoginClientID = os.Getenv("ONELOGIN_CLIENT_ID")
-		clientConfigs.OneLoginClientSecret = os.Getenv("ONELOGIN_CLIENT_SECRET")
-		clientConfigs.OneLoginURL = os.Getenv("ONELOGIN_OAPI_URL")
 	} else {
 		fmt.Println("Using profile", (*profile).Name)
 		clientConfigs.OneLoginClientID = (*profile).ClientID
