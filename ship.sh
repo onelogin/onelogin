@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+VERSION=$(onelogin version)
+LATEST_GIT_TAG=$(git describe --abbrev=0 --tags)
+if [ $VERSION != $LATEST_GIT_TAG ]; then exit 1; fi
+
 package=$1
 if [[ -z "$package" ]]; then
   echo "usage: $0 <package-name>"

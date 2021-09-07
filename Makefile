@@ -1,5 +1,3 @@
-LATEST_GIT_TAG := $(shell git describe --abbrev=0 --tags)
-
 test:
 	go get github.com/jpoles1/gopherbadger
 	gopherbadger -md="readme.md" -png=false
@@ -9,8 +7,6 @@ secure:
 	./bin/gosec -exclude=G104,G109 ./...
 
 ship:
-	go build ./... && go install .
-	if [ "$(shell onelogin version)" != "${LATEST_GIT_TAG}" ]; then exit 1; fi
 	bash ship.sh github.com/onelogin/onelogin
 
 clear-tf:
