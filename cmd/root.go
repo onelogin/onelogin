@@ -65,7 +65,7 @@ func init() {
 		Short: "Print the version number of OneLogin",
 		Long:  `All software has versions. This is OneLogin's`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("v0.1.18")
+			fmt.Println("v0.1.19")
 		},
 	})
 }
