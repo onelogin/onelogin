@@ -17,10 +17,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -57,6 +58,16 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	// Add Version output command
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Print the version number of OneLogin",
+		Long:  `All software has versions. This is OneLogin's`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("v0.1.18")
+		},
+	})
 }
 
 // initConfig reads in config file and ENV variables if set.
