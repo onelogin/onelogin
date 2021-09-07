@@ -1,5 +1,4 @@
 LATEST_GIT_TAG := $(shell git describe --abbrev=0 --tags)
-VERSION := $(shell onelogin version)
 
 test:
 	go get github.com/jpoles1/gopherbadger
@@ -10,9 +9,9 @@ secure:
 	./bin/gosec -exclude=G104,G109 ./...
 
 ship:
-	
-	if [ "${VERSION}" != "${LATEST_GIT_TAG}" ]; then exit 1; fi
-	# bash ship.sh github.com/onelogin/onelogin
+	go build ./... && go install .
+	if [ "$(shell onelogin version)" != "${LATEST_GIT_TAG}" ]; then exit 1; fi
+	bash ship.sh github.com/onelogin/onelogin
 
 clear-tf:
 	rm -rf .terraform/ && rm .terraform.lock.hcl terraform.* main.tf
